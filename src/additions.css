@@ -1,0 +1,500 @@
+/* The original layout grid lived on <body>; now the React app mounts into
+   #root, so the grid moves there. body keeps its classes (active / railhidden /
+   dragging) which legacy.css still targets via descendant selectors. */
+html,
+body,
+#root {
+  height: 100%;
+}
+/* legacy.css makes <body> the 52px/1fr grid, but the React app now mounts into
+   a single #root child — so neutralize the body grid and move that layout to
+   #root, otherwise #root is squeezed into the 52px row and only the header
+   (which is 52px) shows. */
+body {
+  display: block;
+}
+#root {
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  overflow: hidden;
+}
+
+/* Small additions that did not exist as CSS in the original single-file
+   dashboard (the toast element was created but never styled). Kept minimal so
+   the rest of the UI stays byte-identical. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%) translateY(14px);
+  z-index: 80;
+  max-width: min(560px, 90vw);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.ok {
+  border-color: rgba(63, 185, 80, 0.55);
+}
+.toast.err {
+  border-color: rgba(248, 81, 73, 0.55);
+  color: #ffb4ad;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+}
+
+/* Quick status filters for the session rail (All / Needs you / Working /
+   Failed). Sits between the filter box and the "Sessions" label. */
+.rail-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 12px 8px;
+}
+.rail-filter {
+  font-size: 11px;
+  line-height: 1;
+  padding: 5px 9px;
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.rail-filter:hover {
+  border-color: var(--mut);
+  color: var(--ink);
+}
+.rail-filter.on {
+  color: var(--ink);
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+}
+
+/* Timeline hover indicator — makes the row under the mouse obvious while scanning */
+.trow,
+.tprompt {
+  border-radius: 6px;
+  box-shadow: inset 3px 0 0 transparent;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.trow:hover,
+.tprompt:hover {
+  background: color-mix(in srgb, var(--acc) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--acc);
+}
+/* keep the turn summary hover consistent with the accent cue */
+.turn > summary {
+  box-shadow: inset 3px 0 0 transparent;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.turn > summary:hover {
+  box-shadow: inset 3px 0 0 var(--acc);
+}
+
+/* Selected session stays visibly tinted so it's clear which one is open
+   (plain hover uses --panel-2, which was indistinguishable from .sel) */
+.srow.sel {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 45%, var(--line-2));
+}
+.srow.sel:hover {
+  background: color-mix(in srgb, var(--acc) 20%, transparent);
+}
+.srow.sel .sname {
+  color: var(--ink);
+}
+
+/* ============================================================================
+   UI/UX pass — a11y row actions, settings menu, setup helper, connection
+   banner, custom tooltip, pins, and a few polish/responsive rules. Kept here
+   (not legacy.css) so the original stylesheet stays as-is.
+   ========================================================================== */
+
+/* ---- Rail rows: primary select target is now a real <button>, actions are
+   real <button>s (keyboard-reachable, no button-in-button). ---- */
+.srow-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+/* the row actions are hidden until hover — but a keyboard user tabbing to them
+   (focus-within) must see them too */
+.srow:focus-within .sclose {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ssource {
+  margin-left: 6px;
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: 5px;
+  padding: 0 5px;
+  vertical-align: middle;
+}
+
+/* ---- AgentLane cards/chips are <button>s now: keep their text left-aligned ---- */
+.agent,
+.chip {
+  text-align: left;
+  font: inherit;
+}
+/* small readability bumps on non-measured card text (not the trace axis) */
+.agent .arole,
+.agent .atype,
+.chip.expanded .crole,
+.chip.expanded .ctype,
+.histrow .hmeta,
+.histrow .hwhen {
+  font-size: 11px;
+}
+.agent .aquote,
+.chip.expanded .cquote {
+  font-size: 11.5px;
+}
+
+/* ---- Settings (⚙) popover in the top bar ---- */
+.setwrap {
+  position: relative;
+  display: inline-flex;
+}
+.tbtn.has-alert {
+  position: relative;
+}
+.tbtn.has-alert::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+.setmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 55;
+  min-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 11px;
+  padding: 6px;
+  box-shadow: 0 1px 0 var(--hi) inset, 0 20px 50px -12px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: setpop 0.16s ease both;
+}
+@keyframes setpop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.setitem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.setitem:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.setitem .si-ico {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+.setitem .si-lbl {
+  flex: 1;
+}
+.setitem .si-val {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--mut);
+}
+.setitem .si-toggle {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--mut);
+}
+.setitem .si-toggle.on {
+  color: var(--ok);
+  border-color: rgba(63, 185, 80, 0.5);
+  background: rgba(63, 185, 80, 0.1);
+}
+.sethint {
+  padding: 8px 10px 4px;
+  margin-top: 4px;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--mut);
+  border-top: 1px solid var(--line);
+}
+
+/* ---- Connection-lost banner. It's a real #root grid row (added via
+   body.conn-lost) so it pushes content down instead of overlapping it. ---- */
+body.conn-lost #root {
+  grid-template-rows: 52px auto 1fr;
+}
+.connbanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 8px 16px;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--err) 16%, var(--panel));
+  border-bottom: 1px solid rgba(248, 81, 73, 0.5);
+  box-shadow: 0 8px 24px -14px rgba(0, 0, 0, 0.8);
+  animation: cbslide 0.2s ease both;
+}
+.connbanner code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0 5px;
+  border-radius: 4px;
+}
+.connbanner .cb-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--err);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes cbslide {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+/* ---- First-run / no-data setup helper (detail pane) ---- */
+.setup {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* horizontal padding auto-centers a ~620px reading column */
+  padding: 40px max(24px, calc((100% - 620px) / 2)) 64px;
+}
+.setup-glyph {
+  width: 52px;
+  height: 52px;
+  margin-bottom: 16px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+}
+.setup-h {
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin-bottom: 8px;
+}
+.setup-sub {
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+.setup-warn {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--warn);
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px solid rgba(210, 153, 34, 0.4);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 18px;
+}
+.setup-steps {
+  list-style: decimal;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+.setup code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 1px 6px;
+  word-break: break-all;
+}
+.setup-code-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+.setup-code-row > code {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+}
+.setup-copy {
+  flex: none;
+  font-size: 11.5px;
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: 7px;
+  padding: 6px 12px;
+}
+.setup-copy:hover {
+  color: var(--ink);
+  border-color: var(--acc);
+  background: var(--panel-2);
+}
+.setup-copy.block {
+  width: 100%;
+  padding: 9px;
+  text-align: center;
+}
+.setup-foot {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--mut);
+}
+.dempty-hint {
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: var(--mut);
+}
+
+/* ---- Custom tooltip layer (data-tip) — faster than title, never clips ---- */
+.tiplayer {
+  position: fixed;
+  z-index: 90;
+  transform: translateX(-50%);
+  max-width: 340px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  white-space: normal;
+  word-break: break-word;
+  animation: tipin 0.1s ease both;
+}
+@keyframes tipin {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-3px);
+  }
+}
+
+/* ---- Stats overlay: cap height + scroll inside (like History) so a tall
+   analytics view doesn't push the whole modal past the viewport ---- */
+.ovbox.statbox {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 112px);
+}
+.ovbox.statbox .ovscroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* pull the scroll edge to the box edge, then re-pad the content */
+  margin: 0 -24px -24px;
+  padding: 2px 24px 24px;
+}
+
+/* ---- Responsive: let the top bar wrap instead of overflowing on narrow
+   windows (the #root header row grows to fit rather than clipping). ---- */
+@media (max-width: 900px) {
+  #root {
+    grid-template-rows: auto 1fr;
+  }
+  body.conn-lost #root {
+    grid-template-rows: auto auto 1fr;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    height: auto;
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+  .top-right {
+    gap: 10px;
+  }
+}
+@media (max-width: 620px) {
+  .spark {
+    display: none;
+  }
+  .topbar {
+    gap: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .setmenu,
+  .connbanner,
+  .tiplayer {
+    animation: none;
+  }
+}
