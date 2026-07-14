@@ -18,7 +18,6 @@ export default defineConfig({
       '/stats': { target: API, changeOrigin: true },
       '/history': { target: API, changeOrigin: true },
       '/session': { target: API, changeOrigin: true },
-      '/focus': { target: API, changeOrigin: true },
     },
   },
   build: {

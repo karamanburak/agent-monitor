@@ -19,7 +19,7 @@ bun run dev       # Vite UI (5173) + API/SSE server (3456) together, hot-reload
 
 Then open **http://127.0.0.1:5173**. `bun run dev` proxies all API / SSE calls to
 the backend on **3456**; both ports are bound to localhost only — nothing leaves
-this Mac.
+your machine.
 
 Stop it with `Ctrl-C` (or `lsof -ti :3456 :5173 | xargs kill`).
 
@@ -66,17 +66,15 @@ Claude Code (any repo/directory)
                       └─ React app (Redux store ingests the SSE stream)
 ```
 
-- **Backend** (`server/server.ts`): the same logic as the old `server.js`,
-  ported to TypeScript. Collects hook events, broadcasts them over SSE, persists
-  them to a local **SQLite** file (`events.db`, via built-in `bun:sqlite` — no
-  server process, just a file in this folder), reads local token-usage from
-  `~/.claude/projects/**/*.jsonl`, and replays past sessions with indexed
-  queries. API only — the UI is served by Vite.
+- **Backend** (`server/server.ts`): Bun/Node HTTP server. Collects hook events,
+  broadcasts them over SSE, persists them to a local **SQLite** file (`events.db`,
+  via built-in `bun:sqlite` — no separate DB process, just a file in this folder),
+  reads local token-usage from `~/.claude/projects/**/*.jsonl`, and replays past
+  sessions with indexed queries. API only — the UI is served by Vite in dev.
 - **Frontend** (`src/`): React 19 with hooks. Redux Toolkit holds all state —
   `sessionsSlice` runs the event-ingestion reducer (Immer), `uiSlice` holds
-  selection / view / filter, `usageSlice` holds token data. Tailwind is wired up
-  for utility work; the detailed component look is preserved verbatim in
-  `src/legacy.css` so the UI is visually identical to the original dashboard.
+  selection / view / filter, `usageSlice` holds token data. Tailwind handles
+  utility styling; the main dashboard look lives in `src/legacy.css`.
   Toasts use `goey-toast`.
 
 ### Source map
@@ -87,11 +85,13 @@ src/
   main.tsx              React root + providers + CSS imports
   App.tsx               layout, hook wiring, overlays, inspector
   store/                Redux Toolkit: sessions / ui / usage slices + typed hooks
-  lib/                  types, ingest (applyEvent port), format utils, legends, turns, markdown, api
-  hooks/                useEventStream, useTick, useUsage, useAlerts, useTheme, useNow, useFocusSession
-  components/           TopBar, Rail, TokenFooter, Detail, AgentLane,
-                        Timeline, Trace, Inspector, Overlay, StatsOverlay, HistoryOverlay, Toast
-  legacy.css            original dashboard stylesheet, verbatim
+  lib/                  types, ingest (applyEvent), format utils, legends, turns, markdown, api, selectors
+  hooks/                useEventStream, useTick, useUsage, useAlerts, useTheme, useNow
+  components/           TopBar, Rail, TokenFooter, Detail, AgentLane, Timeline, Trace,
+                        Inspector, Overlay, StatsOverlay, HistoryOverlay, SettingsMenu,
+                        ConnectionBanner, EmptyState, Toast, Tip
+  index.css             Tailwind base + theme tokens
+  legacy.css            main dashboard stylesheet
   additions.css         #root layout grid (+ small extras)
 server/
   server.ts             entry: http server
@@ -100,7 +100,7 @@ server/
   helpers/              truncate, pricing, http utils
   models/               db (SQLite), eventStore, usageStore, historyStore (state + logic)
   validations/          request body limits + parsers
-  controllers/          events, usage, history, focus handlers
+  controllers/          events, usage, history handlers
 ```
 
 ## Features
@@ -135,10 +135,10 @@ SubagentStop · Notification
 - Event history lives in `events.db` (a local SQLite file — plain-text prompts
   inside, do not share it). All history is kept (no rotation); any single string
   field is truncated at `MAX_FIELD_CHARS` (20000) before storing.
-- Change the port with `PORT=4000 bun run server/server.ts` (update
-  `hook-forward.sh` and the proxy targets in `vite.config.ts` too).
+- Change the port with `PORT=4000 bun run server` (update `hook-forward.sh` and
+  the proxy targets in `vite.config.ts` too).
 
 ## Uninstall
 
 1. Delete the `"hooks"` block from `~/.claude/settings.json`.
-2. `lsof -ti :3456 | xargs kill` and delete this folder.
+2. `lsof -ti :3456 :5173 | xargs kill` and delete this folder.
