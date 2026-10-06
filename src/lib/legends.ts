@@ -111,3 +111,14 @@ export const TECH_LEGENDS: Legend[] = [
 export function legendFor(id: unknown): Legend {
   return TECH_LEGENDS[hashStr(String(id)) % TECH_LEGENDS.length];
 }
+
+// Subagents are named by what they are first (their type), with the deterministic
+// codename only as a disambiguating suffix: "Explore (Graham)".
+export function agentTypeLabel(type: string | undefined): string {
+  const t = (type || '').trim();
+  if (!t || t === 'subagent') return 'Subagent';
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+export function agentDisplay(type: string | undefined, id: string): string {
+  return `${agentTypeLabel(type)} (${legendFor(id).f.split(' ').pop()})`;
+}

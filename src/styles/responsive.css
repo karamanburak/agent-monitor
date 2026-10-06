@@ -1,0 +1,127 @@
+/* ---- Responsive: let the top bar wrap instead of overflowing on narrow
+   windows (the #root header row grows to fit rather than clipping). ---- */
+@media (max-width: 900px) {
+  #root {
+    grid-template-rows: auto 1fr;
+  }
+  body.conn-lost #root {
+    grid-template-rows: auto auto 1fr;
+  }
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: var(--sp-2);
+    padding-bottom: var(--sp-2);
+  }
+}
+@media (max-width: 620px) {
+  .spark {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .setmenu,
+  .connbanner,
+  .tiplayer {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .needsmenu,
+  .cmdk,
+  .cmdk-layer {
+    animation: none;
+  }
+}
+
+/* ---- Mobile (≤700px): the session rail becomes an off-canvas drawer ---- */
+.rail-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  background: var(--scrim);
+}
+@media (max-width: 700px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  /* the desktop "hide sidebar" body class must not kill the drawer */
+  body.railhidden .rail {
+    display: flex;
+  }
+  .rail {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100dvh;
+    width: min(85vw, 340px);
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    border-right: 1px solid var(--line-2);
+    box-shadow: 24px 0 60px -30px rgb(var(--shadow-rgb) / calc(0.7 * var(--shadow-k)));
+  }
+  body.railopen .rail {
+    transform: none;
+  }
+  .rail-resize {
+    display: none;
+  }
+  /* the tool inspector takes the whole screen on phones (and covers the top bar) */
+  .inspector {
+    z-index: 56;
+    top: 0;
+    width: 100vw;
+    height: 100dvh;
+  }
+  .insp-resize {
+    display: none;
+  }
+}
+
+/* ---- Phone (≤700px): let the detail header and toolbars wrap instead of
+   stretching the pane wider than the screen (which clipped every row) ---- */
+@media (max-width: 700px) {
+  .dwrap {
+    padding: var(--sp-4) var(--sp-4) 0;
+  }
+  .dhead {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+  /* name gets the rest of the avatar's line; badges + status drop below */
+  .dnames {
+    flex: 1 1 calc(100% - 42px - var(--sp-4));
+  }
+  /* path takes its own line; badges wrap beneath it */
+  .dpath {
+    flex-basis: 100%;
+  }
+  section h2 {
+    flex-wrap: wrap;
+    row-gap: var(--sp-2);
+  }
+  .h2right {
+    flex-wrap: wrap;
+  }
+  .top-right {
+    flex-wrap: wrap;
+  }
+  .dfoot {
+    flex-wrap: wrap;
+    row-gap: var(--sp-1);
+  }
+}
+
+/* phones: top-bar actions go icon-only so the bar stays ~2 rows, not 4 */
+@media (max-width: 700px) {
+  .top-right .tbtn .lbl {
+    display: none;
+  }
+  .top-right .tbtn {
+    padding-left: var(--sp-2);
+    padding-right: var(--sp-2);
+  }
+}

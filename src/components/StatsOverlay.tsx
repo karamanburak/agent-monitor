@@ -5,6 +5,7 @@ import { getStats } from '../lib/api';
 import { displayStatus, MODEL_COLORS } from '../lib/constants';
 import { fmtDur, fmtTokens } from '../lib/format';
 import Overlay from './Overlay';
+import Icon from './Icon';
 import type { StatsDay } from '../lib/types';
 
 function keyToDayIndex(k: number) {
@@ -238,7 +239,10 @@ function UsageOverview({ days }: { days: StatsDay[] }) {
         {days.map((r, i) => {
           const f = r.total / max;
           const op = r.total === 0 ? 0 : f > 0.6 ? 1 : f > 0.3 ? 0.75 : f > 0.1 ? 0.5 : 0.3;
-          const bg = r.total === 0 ? 'rgba(255,255,255,0.05)' : `rgba(76,141,255,${op})`;
+          const bg =
+            r.total === 0
+              ? 'color-mix(in srgb, var(--ink) 5%, transparent)'
+              : `color-mix(in srgb, var(--acc) ${op * 100}%, transparent)`;
           return <i key={i} style={{ background: bg }} title={`${r.d}: ${fmtTokens(r.total)} tokens`}></i>;
         })}
       </div>
@@ -333,22 +337,47 @@ export default function StatsOverlay({ open, onClose }: { open: boolean; onClose
     return () => clearInterval(iv);
   }, [open, dispatch]);
 
+  // two different sources, two tabs: what the monitor sees live vs. your transcript history
+  const [tab, setTab] = useState<'live' | 'usage'>('live');
+
   return (
     <Overlay open={open} onClose={onClose} label="Analytics">
       <div className="ovbox statbox">
         <h2>
-          📊 Analytics
+          <Icon name="bar-chart" size={16} /> Analytics
+          <span className="stattabs" role="tablist" aria-label="Analytics view">
+            <button
+              role="tab"
+              aria-selected={tab === 'live'}
+              className={tab === 'live' ? 'on' : ''}
+              onClick={() => setTab('live')}
+            >
+              Live now
+            </button>
+            <button
+              role="tab"
+              aria-selected={tab === 'usage'}
+              className={tab === 'usage' ? 'on' : ''}
+              onClick={() => setTab('usage')}
+            >
+              Your usage
+            </button>
+          </span>
           <button className="ovclose" aria-label="Close" onClick={onClose}>
             ✕ Close
           </button>
         </h2>
         <div className="ovsub">
-          From your local transcripts (<b>this Mac only</b>, nothing external). Live-refreshing.
+          {tab === 'live' ? (
+            <>Sessions and tool calls this dashboard has seen since it started.</>
+          ) : (
+            <>
+              Token usage from your local transcripts (<b>this Mac only</b>, nothing external), priced at API list rates
+              — an estimate, not your plan bill.
+            </>
+          )}
         </div>
-        <div className="ovscroll">
-          <UsageCard />
-          <StatCards />
-        </div>
+        <div className="ovscroll">{tab === 'live' ? <StatCards /> : <UsageCard />}</div>
       </div>
     </Overlay>
   );

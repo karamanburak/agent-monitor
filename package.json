@@ -3,13 +3,14 @@
   "version": "2.0.0",
   "private": true,
   "type": "module",
-  "description": "Fully local, live dashboard for watching Claude Code (and other) agent sessions and their subagents. React + TypeScript + Redux Toolkit + Tailwind, served by a zero-external Node/Bun backend.",
+  "description": "Fully local, live dashboard for watching Claude Code (and other) agent sessions and their subagents. React + TypeScript + Redux Toolkit + plain CSS design tokens, served by a zero-external Node/Bun backend.",
   "scripts": {
     "dev": "concurrently -k -n server,vite -c green,cyan \"bun run dev:server\" \"vite\"",
     "dev:server": "bun run --watch server/server.ts",
     "server": "bun run server/server.ts",
     "typecheck": "tsc -b --noEmit",
     "test": "bun test",
+    "test:e2e": "bun tests/e2e/smoke.e2e.ts",
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check": "biome check --write ."
@@ -29,10 +30,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5",
-    "autoprefixer": "^10.4.20",
     "concurrently": "^9.0.1",
-    "postcss": "^8.4.45",
-    "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",
     "vite": "^7"
   }

@@ -1,6 +1,7 @@
 import type http from 'node:http';
 import { postEvent, streamEvents } from './controllers/eventsController';
-import { getHistory, getSession } from './controllers/historyController';
+import { getHistory, getSession, searchHistory } from './controllers/historyController';
+import { getSetup } from './controllers/setupController';
 import { getSessionUsage, getStats, getUsage } from './controllers/usageController';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse, u: URL) => void;
@@ -11,6 +12,8 @@ const ROUTES: Record<string, Handler> = {
   'GET /usage/session': getSessionUsage,
   'GET /history': getHistory,
   'GET /session': getSession,
+  'GET /search': searchHistory,
+  'GET /setup': getSetup,
   'GET /events': streamEvents,
   'POST /event': postEvent,
 };

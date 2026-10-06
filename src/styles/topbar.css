@@ -1,0 +1,240 @@
+/* ---------- top bar ----------
+   Glass header: clean translucency with a crisp bottom edge (no ambient glow —
+   a tinted band under the bar read as a second, misaligned header). */
+.topbar { display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-5);
+          border-bottom: 1px solid var(--line-2);
+          background: color-mix(in srgb, var(--panel) var(--glass), transparent);
+          backdrop-filter: blur(20px) saturate(1.5); -webkit-backdrop-filter: blur(20px) saturate(1.5);
+          box-shadow: 0 1px 0 var(--hi) inset, 0 10px 26px -22px rgb(var(--shadow-rgb) / calc(0.7 * var(--shadow-k)));
+          position: relative;
+          /* above the inspector drawer (45) so the settings / needs-you menus aren't hidden under it */
+          z-index: 50; }
+.mark { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--mut); flex: none; }
+body.active .mark { background: var(--ok); }
+/* quiet, solid wordmark — the status dot next to it does the talking */
+.topbar h1 { font-size: var(--fs-base); letter-spacing: 0; font-weight: 650; color: var(--ink); }
+/* one status language: both pills share the same chip anatomy, amber = the signal */
+.pill { display: none; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--ink-2);
+        border: 1px solid color-mix(in srgb, var(--line-2) 85%, transparent); border-radius: var(--r-pill); padding: var(--sp-1) var(--sp-3);
+        background: color-mix(in srgb, var(--panel-2) 45%, transparent); box-shadow: 0 1px 0 var(--hi) inset; }
+.pill .pdot { width: 7px; height: 7px; border-radius: 50%; }
+.pill.show { display: inline-flex; }
+.pill.working .pdot { background: var(--status-working); }
+.pill.needs { color: var(--status-waiting); border-color: color-mix(in srgb, var(--status-waiting) 35%, transparent);
+              background: color-mix(in srgb, var(--status-waiting) 10%, transparent); }
+.pill.needs .pdot { background: var(--status-waiting); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.35; } }
+.top-right { margin-left: auto; display: flex; align-items: center; gap: var(--sp-2); }
+.spark { display: flex; align-items: flex-end; gap: var(--sp-0_5); height: 18px; width: 74px; }
+.spark i { flex: 1; min-height: 2px; border-radius: 1px; background: var(--line-2); transition: height 0.35s ease, background 0.35s ease; }
+.spark i.lit { background: var(--acc); }
+/* buttons read as glass chips, and icons sit inline with their labels */
+.tbtn { display: inline-flex; align-items: center; gap: var(--sp-1_5); font-size: var(--fs-sm); color: var(--ink-2);
+        border: 1px solid color-mix(in srgb, var(--line-2) 85%, transparent); border-radius: var(--r-md); padding: var(--sp-1) var(--sp-3);
+        background: color-mix(in srgb, var(--panel-2) 55%, transparent); box-shadow: 0 1px 0 var(--hi) inset;
+        transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease; }
+.tbtn:hover { border-color: var(--mut); color: var(--ink); background: var(--panel-2); }
+/* secondary controls — quieter until hovered, so the focal ⌘K chip leads the eye */
+.tbtn-quiet { color: var(--mut); background: transparent; box-shadow: none; }
+.tbtn-quiet:hover { border-color: var(--line-2); }
+.tbtn-icon { font-size: var(--fs-md); line-height: 1; }
+.conn { display: inline-flex; align-items: center; gap: 0; font-size: var(--fs-sm); color: var(--mut); }
+.conn::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--mut); }
+.conn.on::before { background: var(--ok); }
+
+/* the ⌘K chip is the one bordered element on the right — the header's focal action */
+.cmdkbtn {
+  min-width: 168px;
+  justify-content: flex-start;
+  color: var(--mut);
+}
+.cmdkbtn:hover {
+  color: var(--ink-2);
+}
+.cmdkbtn .lbl {
+  flex: 1;
+  text-align: left;
+  font-size: var(--fs-sm);
+}
+.cmdkbtn kbd {
+  font: inherit;
+  font-size: var(--fs-micro);
+  line-height: 1;
+  padding: var(--sp-1) var(--sp-1);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--panel) 80%, transparent);
+  color: var(--mut);
+}
+@media (max-width: 900px) {
+  .cmdkbtn {
+    min-width: 0;
+  }
+  .cmdkbtn .lbl,
+  .cmdkbtn kbd {
+    display: none;
+  }
+}
+
+/* ---- Settings (⚙) popover in the top bar ---- */
+.setwrap {
+  position: relative;
+  display: inline-flex;
+}
+.tbtn.has-alert {
+  position: relative;
+}
+.tbtn.has-alert::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 2px var(--panel);
+}
+.setmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 55;
+  min-width: 220px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: var(--sp-1_5);
+  box-shadow: 0 1px 0 var(--hi) inset, 0 20px 50px -12px rgb(var(--shadow-rgb) / calc(0.6 * var(--shadow-k)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0_5);
+  animation: setpop 0.16s ease both;
+}
+@keyframes setpop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+.setitem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2_5);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-2) var(--sp-2_5);
+  border-radius: var(--r-md);
+  font-size: var(--fs-base);
+  color: var(--ink-2);
+}
+.setitem:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.setitem .si-ico {
+  flex: none;
+  width: 18px;
+  text-align: center;
+  font-size: var(--fs-md);
+}
+.setitem .si-lbl {
+  flex: 1;
+}
+.setitem .si-val {
+  flex: none;
+  font-size: var(--fs-sm);
+  color: var(--mut);
+}
+.setitem .si-toggle {
+  flex: none;
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: var(--sp-0_5) var(--sp-2);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line-2);
+  color: var(--mut);
+}
+.setitem .si-toggle.on {
+  color: var(--ok);
+  border-color: color-mix(in srgb, var(--ok) 50%, transparent);
+  background: color-mix(in srgb, var(--ok) 10%, transparent);
+}
+.sethint {
+  padding: var(--sp-2) var(--sp-2_5) var(--sp-1);
+  margin-top: var(--sp-1);
+  font-size: var(--fs-xs);
+  line-height: 1.45;
+  color: var(--mut);
+  border-top: 1px solid var(--line);
+}
+
+.needswrap {
+  position: relative;
+  display: inline-flex;
+}
+.needsmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 55;
+  min-width: 300px;
+  max-width: 400px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: var(--sp-1_5);
+  box-shadow: 0 1px 0 var(--hi) inset, 0 20px 50px -12px rgb(var(--shadow-rgb) / calc(0.6 * var(--shadow-k)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-0_5);
+  animation: setpop 0.16s ease both;
+}
+.needsitem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-0_5) var(--sp-2_5);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-2) var(--sp-2_5);
+  border-radius: var(--r-md);
+}
+.needsitem:hover {
+  background: var(--panel-2);
+}
+.needsitem .ni-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--ink);
+}
+.needsitem .ni-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--status-waiting);
+  font-variant-numeric: tabular-nums;
+}
+.needsitem .ni-msg {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--mut);
+}
+
+/* ---- Top bar: active-overlay state for the Grid toggle ---- */
+.tbtn.on {
+  color: var(--ink);
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+}

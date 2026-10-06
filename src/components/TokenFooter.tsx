@@ -4,27 +4,20 @@ import { fmtMoney, fmtTokens } from '../lib/format';
 import { useNow } from '../hooks/useNow';
 import type { UsageBucket } from '../lib/types';
 
-export default function TokenFooter({ onRefresh }: { onRefresh: () => Promise<void> }) {
+// One line: today's tokens + API-equivalent cost. The full breakdown lives in the
+// tooltip; clicking the line opens the Analytics overlay for the real detail.
+export default function TokenFooter({
+  onRefresh,
+  onOpenStats,
+}: {
+  onRefresh: () => Promise<void>;
+  onOpenStats: () => void;
+}) {
   const usage = useAppSelector((s) => s.usage);
   const now = useNow();
   const [spinning, setSpinning] = useState(false);
 
   const d = usage.data;
-  const seg = (label: string, b?: UsageBucket) =>
-    b ? (
-      <span
-        key={label}
-        title={`in ${fmtTokens(b.input)} · out ${fmtTokens(b.output)} · cache ${fmtTokens(b.cache)} · ≈ ${fmtMoney(b.cost)} API-equiv`}
-      >
-        {label} <b>{fmtTokens(b.input + b.output)}</b>
-      </span>
-    ) : null;
-  const cseg = (label: string, b?: UsageBucket) =>
-    b ? (
-      <span key={label} title="API list-price equivalent of your usage — NOT your Team/subscription bill">
-        {label} <b>{fmtMoney(b.cost)}</b>
-      </span>
-    ) : null;
 
   let meta = '—';
   if (usage.bad || !usage.fetchedAt) meta = usage.bad ? 'server offline' : 'reading…';
@@ -35,42 +28,43 @@ export default function TokenFooter({ onRefresh }: { onRefresh: () => Promise<vo
     meta = `updated ${ago} · next in ${nextS}s`;
   }
 
+  const line = (label: string, b?: UsageBucket) =>
+    b ? `${label} ${fmtTokens(b.input + b.output)} · ${fmtMoney(b.cost)}` : null;
+  const tip = [
+    'Tokens in+out on this Mac · $ = API list-price equivalent, NOT your plan bill',
+    d && [line('Today', d.today), line('7d', d.week), line('30d', d.month), line('Year', d.year)].filter(Boolean).join('   '),
+    meta,
+    'Click for full analytics',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   return (
     <div className="rail-foot">
-      <div>
-        My tokens · in+out{' '}
-        <span className="mono" style={{ opacity: 0.7 }}>
-          (this Mac)
-        </span>
-      </div>
-      <div className="tok">
-        {d ? [seg('Today', d.today), seg('7d', d.week), seg('30d', d.month), seg('Year', d.year)] : '–'}
-      </div>
-      <div
-        style={{ marginTop: 8 }}
-        title="Your token usage priced at Anthropic API list rates. This is NOT what you pay on a Team/subscription plan (that's a flat seat fee) — it's the API-equivalent value of your usage. Edit rates in server.ts."
+      <button type="button" className="tokline" title={tip} onClick={onOpenStats}>
+        <span className="toklbl">Tokens</span>
+        {d?.today && !(d.today.input + d.today.output) ? (
+          <span>none used today</span>
+        ) : d?.today ? (
+          <>
+            <b>{fmtTokens(d.today.input + d.today.output)}</b> today ·{' '}
+            <b title="API list-price equivalent — not your plan bill">≈{fmtMoney(d.today.cost)}</b>
+          </>
+        ) : (
+          <span>{usage.bad ? 'server offline' : 'reading…'}</span>
+        )}
+      </button>
+      <button
+        className={'tokref' + (spinning ? ' spin' : '')}
+        title="Refresh now"
+        aria-label="Refresh token usage"
+        onClick={() => {
+          setSpinning(true);
+          Promise.resolve(onRefresh()).finally(() => setTimeout(() => setSpinning(false), 500));
+        }}
       >
-        API-equiv.{' '}
-        <span className="mono" style={{ opacity: 0.7 }}>
-          (list price, not your plan)
-        </span>
-      </div>
-      <div className="tok">
-        {d ? [cseg('Today', d.today), cseg('7d', d.week), cseg('30d', d.month), cseg('Year', d.year)] : '–'}
-      </div>
-      <div className="tokmeta">
-        <span title="When these figures were last read from your local transcripts">{meta}</span>
-        <button
-          className={'tokref' + (spinning ? ' spin' : '')}
-          title="Refresh now"
-          onClick={() => {
-            setSpinning(true);
-            Promise.resolve(onRefresh()).finally(() => setTimeout(() => setSpinning(false), 500));
-          }}
-        >
-          ↻
-        </button>
-      </div>
+        ↻
+      </button>
     </div>
   );
 }

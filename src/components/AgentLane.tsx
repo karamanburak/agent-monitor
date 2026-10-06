@@ -1,5 +1,5 @@
 import { fmtDur } from '../lib/format';
-import { legendFor } from '../lib/legends';
+import { agentTypeLabel, legendFor } from '../lib/legends';
 import { useNow } from '../hooks/useNow';
 import type { Subagent } from '../lib/types';
 
@@ -13,20 +13,22 @@ function RunningCard({ sa, expanded, onToggle }: { sa: Subagent; expanded: boole
       className={'agent' + (expanded ? ' expanded' : '')}
       title={expanded ? 'Click to collapse' : 'Click to expand'}
       aria-expanded={expanded}
-      aria-label={`Subagent ${leg.f} (${sa.type}) — ${tool}`}
+      aria-label={`${agentTypeLabel(sa.type)} subagent (${leg.f}) — ${tool}`}
       onClick={onToggle}
     >
       <div className="ahead">
         <span className="adot"></span>
-        <span className="aname">
-          {leg.e} {leg.f}
-        </span>
+        <span className="aname">{agentTypeLabel(sa.type)}</span>
         <span className="aage mono">{fmtDur(now - sa.started)}</span>
       </div>
-      <span className="arole" title={`${leg.f} — ${leg.t}`}>
-        {leg.t}
+      {sa.desc ? (
+        <span className="arole" title={sa.desc}>
+          {sa.desc}
+        </span>
+      ) : null}
+      <span className="acode" title={`${leg.f} — ${leg.t}`}>
+        {leg.e} {leg.f}
       </span>
-      <span className="atype">{sa.type}</span>
       <div className="atool mono" title={tool}>
         {tool}
       </div>
@@ -49,18 +51,18 @@ function Chip({ sa, expanded, onToggle }: { sa: Subagent; expanded: boolean; onT
       className={'chip' + (expanded ? ' expanded' : '')}
       title={expanded ? 'Click to collapse' : 'Click to expand'}
       aria-expanded={expanded}
-      aria-label={`Finished subagent ${leg.f} (${sa.type}) — ${dur}`}
+      aria-label={`Finished ${agentTypeLabel(sa.type)} subagent (${leg.f}) — ${dur}`}
       onClick={onToggle}
     >
       <span className="chead">
-        {leg.e} {leg.f}
+        {agentTypeLabel(sa.type)}
         <span className="cd">{dur}</span>
       </span>
       <span className="cbody">
         <span className="crole">
-          {leg.f} — {leg.t}
+          {leg.e} {leg.f} — {leg.t}
         </span>
-        <span className="ctype">{sa.type}</span>
+        {sa.result ? <span className="cresult">{sa.result.slice(0, 280)}</span> : null}
         <span className="cquote">“{leg.q}”</span>
       </span>
     </button>
@@ -90,7 +92,7 @@ export default function AgentLane({
       : '';
 
   return (
-    <section className={'dsubs' + (subagents.length > 0 ? ' has' : '')}>
+    <section className={'dsubs' + (subagents.length > 0 ? ' has' + (allRunning.length ? '' : ' compact') : '')}>
       <h2>
         Subagents <span className="count">{count}</span>
       </h2>

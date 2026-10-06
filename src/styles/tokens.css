@@ -1,0 +1,138 @@
+/* Design tokens — the only place raw colors and scale values live.
+   Components use these variables; a theme only re-declares values here.
+
+   Layers:
+     1. palette    raw theme colors (--bg, --ink, --acc, --ok …)
+     2. semantic   meaning-based aliases (--status-*, --text-*, --surface-*)
+     3. scales     type, spacing, radius, elevation */
+
+:root {
+  /* ---------- 1. palette (dark, default) ---------- */
+  --bg:      #0b0c0f;
+  --panel:   #111318;
+  --panel-2: #171a20;
+  --line:    rgba(255,255,255,0.07);
+  --line-2:  rgba(255,255,255,0.12);
+  --ink:     #e7e7e4;
+  --ink-2:   #b6bac1;
+  --mut:     #8a919c;  /* lifted for WCAG-AA on the smallest muted labels */
+  --acc:     #4c8dff;  /* single accent */
+  --ok:      #3fb950;
+  --warn:    #d29922;
+  --err:     #f85149;
+  --sub:     #d55181;  /* subagents */
+  --prompt:  #a48bfa;
+  --done:    #8ca9c9;  /* finished subagent cards — cool steel, distinct from --sub */
+  --acc-grad: linear-gradient(135deg, var(--acc), var(--prompt));
+  --hi:      rgba(255,255,255,0.035);  /* top-edge surface highlight */
+
+  /* text set on tinted status backgrounds (diffs, error boxes, banners) */
+  --ok-ink:   #7ee787;
+  --err-ink:  #ffb4ad;
+  --warn-ink: #ecd9a8;
+  --on-accent: #fff;   /* text on solid accent/status fills */
+
+  /* categorical palette (avatars, model legend) — 8 hues, fixed order */
+  --cat-1: #4c8dff;
+  --cat-2: #a48bfa;
+  --cat-3: #3fb950;
+  --cat-4: #d29922;
+  --cat-5: #f2718e;
+  --cat-6: #31b8bd;
+  --cat-7: #e0823d;
+  --cat-8: #8ca9c9;
+
+  /* ---------- 2. semantic ---------- */
+  --surface-0: var(--bg);       /* app background */
+  --surface-1: var(--panel);    /* panels, cards, drawers */
+  --surface-2: var(--panel-2);  /* raised / hovered / inputs */
+  --text-1: var(--ink);
+  --text-2: var(--ink-2);
+  --text-3: var(--mut);
+  --text-danger: var(--err);
+  --status-working: var(--ok);
+  --status-waiting: var(--warn);
+  --status-failed:  var(--err);
+  --status-done:    var(--acc);
+  --status-idle:    var(--mut);
+
+  /* ---------- 3. scales ---------- */
+  /* type: 5 text steps + one micro step for dense data viz (trace bars, axes)
+     and one display step for big numbers */
+  --fs-micro: 10px;
+  --fs-xs:    11px;
+  --fs-sm:    12px;
+  --fs-base:  13px;
+  --fs-md:    15px;
+  --fs-lg:    20px;
+  --fs-xl:    22px;
+
+  /* spacing: 4px grid with 2px half-steps for tight chrome */
+  --sp-0_5: 2px;
+  --sp-1:   4px;
+  --sp-1_5: 6px;
+  --sp-2:   8px;
+  --sp-2_5: 10px;
+  --sp-3:   12px;
+  --sp-4:   16px;
+  --sp-5:   20px;
+  --sp-6:   24px;
+  --sp-7:   28px;
+  --sp-8:   32px;
+  --sp-10:  40px;
+  --sp-14:  56px;
+  --sp-16:  64px;
+
+  /* radius: 3 steps + pill (1–3px stay literal on micro marks like bars) */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-pill: 999px;
+
+  /* elevation: shadows tint from --shadow-rgb, scaled by --shadow-k per theme */
+  --shadow-rgb: 0 0 0;
+  --shadow-k: 1;
+  --scrim: rgba(0,0,0,0.55);
+  --glass: 72%;  /* opacity of translucent chrome (top bar) */
+}
+
+/* ---------- light theme (opt-in via data-theme="light") ---------- */
+:root[data-theme="light"] {
+  --bg:      #f5f6f8;
+  --panel:   #ffffff;
+  --panel-2: #eef1f5;
+  --line:    rgba(17,24,39,0.09);
+  --line-2:  rgba(17,24,39,0.15);
+  --ink:     #1b1f27;
+  --ink-2:   #464c57;
+  --mut:     #5f6672;  /* darkened for WCAG-AA on small muted text over light bg */
+  /* ok/warn measured 3.57:1 / 3.96:1 on white at their old values — below AA
+     (4.5:1) for the small text they color; darkened to Primer-fg-level values,
+     acc nudged so it clears AA on tinted bgs too */
+  --acc:     #2563eb;
+  --ok:      #1a7f37;
+  --warn:    #9a6700;
+  --err:     #d92d20;
+  --sub:     #c5397a;
+  --prompt:  #6d51e0;
+  --done:    #5b7a9c;
+  --hi:      rgba(255,255,255,0.55);
+
+  --ok-ink:   #116329;
+  --err-ink:  #b42318;
+  --warn-ink: #7a4f00;
+
+  --cat-1: #2f6fed;
+  --cat-2: #6d51e0;
+  --cat-3: #1a9c46;
+  --cat-4: #b47100;
+  --cat-5: #d6456b;
+  --cat-6: #1f9ba0;
+  --cat-7: #c8661f;
+  --cat-8: #5b7a9c;
+
+  --shadow-rgb: 17 24 39;
+  --shadow-k: 0.4;
+  --scrim: rgba(17,24,39,0.3);
+  --glass: 85%;
+}

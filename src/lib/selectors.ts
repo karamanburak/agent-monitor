@@ -37,12 +37,29 @@ function matchesStatus(s: Session, filter: RailStatusFilter): boolean {
   return true;
 }
 
+// Sessions that need you float to the top, longest-waiting first (triage order);
+// the rest keep the most-recently-active order.
+function triageCompare(a: Session, b: Session): number {
+  const aw = displayStatus(a) === 'waiting';
+  const bw = displayStatus(b) === 'waiting';
+  if (aw !== bw) return aw ? -1 : 1;
+  if (aw && bw) return (a.waitingSince || a.lastSeen) - (b.waitingSince || b.lastSeen);
+  return b.lastSeen - a.lastSeen;
+}
+
+// Waiting sessions sorted longest-first — the needs-you triage queue.
+export function waitingQueue(sessions: Record<string, Session>): Session[] {
+  return Object.values(sessions)
+    .filter((s) => displayStatus(s) === 'waiting')
+    .sort((a, b) => (a.waitingSince || a.lastSeen) - (b.waitingSince || b.lastSeen));
+}
+
 // The status filter narrows only the live list; the Finished group is unaffected.
 export function partitionSessions(sessions: Record<string, Session>, query: string, status: RailStatusFilter = 'all') {
   const all = Object.values(sessions);
   const live = all
     .filter((s) => displayStatus(s) !== 'ended' && matchesQuery(s, query) && matchesStatus(s, status))
-    .sort((a, b) => b.lastSeen - a.lastSeen)
+    .sort(triageCompare)
     .slice(0, 40);
   const finished = all
     .filter((s) => displayStatus(s) === 'ended' && matchesQuery(s, query))

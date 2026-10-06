@@ -1,0 +1,264 @@
+/* ---------- rail (session list) ---------- */
+.rail { position: relative; display: flex; flex-direction: column; min-height: 0; min-width: 0;
+        border-right: 1px solid var(--line); background: var(--panel); }
+.rail-resize { position: absolute; top: 0; right: -4px; width: 8px; height: 100%;
+               cursor: col-resize; z-index: 5; }
+.rail-resize:hover, .rail-resize.drag { background: color-mix(in srgb, var(--acc) 35%, transparent); }
+body.dragging { cursor: col-resize; user-select: none; }
+.rail-scroll { overflow-y: auto; overflow-x: hidden; flex: 1; padding: var(--sp-2_5); }
+.rail-label { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
+              color: var(--mut); padding: var(--sp-2) var(--sp-2) var(--sp-1_5); }
+.srow { position: relative; display: flex; align-items: center; gap: var(--sp-2_5); width: 100%; text-align: left;
+        padding: var(--sp-2) var(--sp-2_5); border-radius: var(--r-md); border: 1px solid transparent;
+        transition: background 0.15s ease, border-color 0.15s ease; }
+.srow:hover { background: var(--panel-2); }
+.srow.sel { background: var(--panel-2); border-color: var(--line-2); }
+.srow.sel::before { content: ""; position: absolute; left: -1px; top: 9px; bottom: 9px; width: 2.5px;
+                    border-radius: 3px; background: var(--acc-grad); }
+.srow .sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--mut); flex: none;
+              position: relative; display: grid; place-items: center; }
+.srow.working .sdot { background: var(--status-working); }
+.srow.justdone .sdot { background: var(--acc); }
+/* needs-you: colour is not the only cue — the "Needs you" label, the hourglass wait
+   counter and a ringed dot (the same dot language as every other row) carry it too */
+.srow.waiting .sdot { background: var(--status-waiting); animation: none;
+                      box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-waiting) 28%, transparent); }
+.srow.waiting .sname::before { content: "Needs you · "; color: var(--status-waiting); font-weight: 600; }
+.smain { min-width: 0; flex: 1; }
+/* block display is required — text-overflow does nothing on inline spans */
+.sname { display: block; font-weight: 600; font-size: var(--fs-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ssub { display: block; font-size: var(--fs-sm); color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.swhen { font-size: var(--fs-xs); color: var(--mut); flex: none; }
+/* dismiss (✕): visible ONLY on the selected card, so you can't accidentally
+   close another card while mousing across the rail */
+.sclose { flex: none; font-size: var(--fs-sm); line-height: 1; color: var(--mut); border: 1px solid transparent;
+          border-radius: var(--r-sm); padding: var(--sp-0_5) var(--sp-1_5); opacity: 0; pointer-events: none;
+          transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.srow.sel .sclose { opacity: 1; pointer-events: auto; }
+.sclose:hover { color: var(--err); border-color: color-mix(in srgb, var(--err) 50%, transparent); }
+.rail-empty { color: var(--mut); font-size: var(--fs-base); padding: var(--sp-4) var(--sp-2_5); }
+
+.donewrap { padding: var(--sp-1) var(--sp-2) var(--sp-2_5); }
+.donewrap summary { cursor: pointer; list-style: none; font-size: var(--fs-xs); color: var(--mut); padding: var(--sp-1_5) var(--sp-0_5);
+                    text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; user-select: none; }
+.donewrap summary::-webkit-details-marker { display: none; }
+.donewrap summary:hover { color: var(--ink-2); }
+.drow { display: flex; gap: var(--sp-2); align-items: center; width: 100%; text-align: left;
+        font-size: var(--fs-sm); color: var(--mut); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); min-width: 0; }
+.drow:hover { background: var(--panel-2); color: var(--ink-2); }
+.drow .dname { color: var(--ink-2); flex: none; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drow .dwhat { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.drow .dt { flex: none; font-size: var(--fs-xs); }
+
+/* one-line now-playing strip; the station list opens in a popover above it */
+.rail-radio { position: relative; border-top: 1px solid var(--line); padding: var(--sp-1_5) var(--sp-2); }
+.rstrip { display: flex; align-items: center; gap: var(--sp-0_5); }
+.rstrip-main { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: var(--sp-2);
+               text-align: left; font-size: var(--fs-sm); color: var(--ink-2); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); }
+.rstrip-main:hover { background: var(--panel-2); color: var(--ink); }
+.rstrip .rpbtn svg, .rstrip-main svg { display: block; flex: none; }
+.rail-radio.playing .rstrip-name { color: var(--ink); font-weight: 600; }
+.rstrip-name { flex: none; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rstrip-chev { color: var(--mut); font-size: var(--fs-micro); margin-left: auto; }
+.rpop { position: absolute; bottom: calc(100% + 6px); left: 8px; right: 8px; z-index: 40;
+        max-height: min(50vh, 420px); overflow-y: auto; padding: var(--sp-1_5);
+        background: var(--panel); border: 1px solid var(--line-2); border-radius: var(--r-md);
+        box-shadow: 0 10px 28px rgb(var(--shadow-rgb) / calc(0.45 * var(--shadow-k))); }
+.rpop-now { display: flex; align-items: center; gap: var(--sp-1_5); padding: var(--sp-1) var(--sp-1) var(--sp-2) var(--sp-2);
+            margin-bottom: var(--sp-1); border-bottom: 1px solid var(--line); }
+.rpop-title { flex: 1; min-width: 0; font-size: var(--fs-xs); font-weight: 600; color: var(--ink);
+              white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* stations: quiet rows in the rail's idiom — the emoji is the glyph, no chrome */
+.rlist { display: flex; flex-direction: column; gap: 1px; }
+.rgrp { font-size: var(--fs-micro); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+        color: var(--mut); padding: var(--sp-2) var(--sp-2) var(--sp-1); }
+.rrow { display: flex; align-items: center; gap: var(--sp-2); width: 100%; text-align: left;
+        font-size: var(--fs-sm); color: var(--ink-2); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm); }
+.rrow:hover { background: var(--panel-2); color: var(--ink); }
+.rrow .rname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rrow .rgo { display: inline-flex; color: var(--mut); opacity: 0; }
+.rrow:hover .rgo, .rrow:focus-visible .rgo { opacity: 1; }
+.rrow.active { color: var(--ink); background: var(--panel-2); }
+
+/* 3-bar equalizer — animates only while playing, freezes on pause */
+.req { display: inline-flex; align-items: flex-end; gap: var(--sp-0_5); height: 11px; flex: none; }
+.req i { width: 2.5px; height: 100%; border-radius: 1px; background: var(--acc);
+         transform-origin: bottom; animation: eqbar 1s ease-in-out infinite; }
+.req i:nth-child(1) { animation-delay: -0.9s; }
+.req i:nth-child(2) { animation-delay: -0.45s; }
+.req.paused i { animation-play-state: paused; opacity: 0.55; }
+@keyframes eqbar { 0%, 100% { transform: scaleY(0.35); } 50% { transform: scaleY(1); } }
+
+/* opt-in video frame above the strip; hidden (height 0) it keeps the iframe mounted so sound continues */
+.rplayer { margin-bottom: var(--sp-1_5); border-radius: var(--r-md); overflow: hidden; background: #000; }
+.rplayer.audio { margin-bottom: 0; }
+.rplayer:not(.audio) { border: 1px solid var(--line-2); }
+.rpbtn { flex: none; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+         border-radius: var(--r-sm); color: var(--mut); font-size: var(--fs-sm); text-decoration: none; }
+.rpbtn:hover { color: var(--ink); background: var(--line-2); }
+.rpframe { position: relative; width: 100%; height: var(--rph, 160px); }
+/* audio-only mode: the iframe stays mounted (sound continues) but occupies no space */
+.rplayer.audio .rpframe { height: 0; }
+.rpframe iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.rpresize { height: 9px; cursor: row-resize; background: var(--panel-2); border-bottom: 1px solid var(--line); }
+.rpresize:hover, .rpresize.drag { background: color-mix(in srgb, var(--acc) 35%, transparent); }
+body.rowdragging { cursor: row-resize; user-select: none; }
+
+/* one-line token summary — the detail lives in the tooltip and the Analytics overlay */
+.rail-foot { display: flex; align-items: center; gap: var(--sp-1_5); border-top: 1px solid var(--line);
+             padding: var(--sp-1_5) var(--sp-2); font-size: var(--fs-sm); color: var(--mut); }
+.tokline { flex: 1; min-width: 0; display: inline-flex; align-items: center; gap: var(--sp-2);
+           text-align: left; color: var(--ink-2); padding: var(--sp-1) var(--sp-2); border-radius: var(--r-sm);
+           white-space: nowrap; overflow: hidden; }
+.tokline:hover { background: var(--panel-2); color: var(--ink); }
+.tokline b { font-weight: 600; color: var(--ink); }
+.toklbl { color: var(--mut); }
+
+/* ---------- rail search ---------- */
+.rail-search { position: sticky; top: 0; z-index: 3; background: var(--panel);
+               padding: var(--sp-0_5) var(--sp-0_5) var(--sp-2); margin-bottom: var(--sp-0_5); }
+.rail-search .wrap { position: relative; }
+.rail-search input { width: 100%; background: var(--panel-2); border: 1px solid var(--line-2);
+                     border-radius: var(--r-md); color: var(--ink); font: inherit; padding: var(--sp-1_5) var(--sp-7) var(--sp-1_5) var(--sp-7); }
+.rail-search input::placeholder { color: var(--mut); }
+.rail-search input:focus { border-color: var(--acc); outline: none; }
+.rail-search .mag { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); display: flex; align-items: center;
+                    color: var(--mut); font-size: var(--fs-sm); pointer-events: none; }
+.rail-search .clr { position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+                    color: var(--mut); font-size: var(--fs-sm); padding: var(--sp-0_5) var(--sp-1); border-radius: var(--r-sm); display: none; }
+.rail-search.has .clr { display: block; }
+.rail-search .clr:hover { color: var(--ink); background: var(--panel); }
+
+/* ---------- usage refresh button ---------- */
+.tokref { flex: none; border: 1px solid var(--line-2); color: var(--mut); border-radius: var(--r-sm);
+          width: 22px; height: 22px; line-height: 1; font-size: var(--fs-sm); }
+.tokref:hover { color: var(--ink); border-color: var(--mut); }
+.tokref.spin { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Quick status filters for the session rail (All / Needs you / Working /
+   Failed). Sits between the filter box and the "Sessions" label. */
+.rail-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1_5);
+  padding: 0 var(--sp-3) var(--sp-2);
+}
+.rail-filter {
+  font-size: var(--fs-xs);
+  line-height: 1;
+  padding: var(--sp-1) var(--sp-2);
+  color: var(--ink-2);
+  background: transparent;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.rail-filter:hover {
+  border-color: var(--mut);
+  color: var(--ink);
+}
+.rail-filter.on {
+  color: var(--ink);
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+}
+
+/* Selected session stays visibly tinted so it's clear which one is open
+   (plain hover uses --panel-2, which was indistinguishable from .sel) */
+.srow.sel {
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  border-color: color-mix(in srgb, var(--acc) 45%, var(--line-2));
+}
+.srow.sel:hover {
+  background: color-mix(in srgb, var(--acc) 20%, transparent);
+}
+.srow.sel .sname {
+  color: var(--ink);
+}
+
+/* ---- Rail rows: primary select target is now a real <button>, actions are
+   real <button>s (keyboard-reachable, no button-in-button). ---- */
+.srow-main {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2_5);
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+/* the row actions are hidden until hover — but a keyboard user tabbing to them
+   (focus-within) must see them too */
+.srow:focus-within .sclose {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ssource {
+  margin-left: var(--sp-1_5);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 0 var(--sp-1);
+  vertical-align: middle;
+}
+
+/* ---- Needs-you triage: wait badge in the rail + queue dropdown in the top bar ---- */
+.swhen.swait {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  color: var(--status-waiting);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Rail: project groups (only once ≥2 projects are live at once) ---- */
+.railgrp + .railgrp {
+  margin-top: var(--sp-1);
+}
+.railgrp-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1_5);
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
+}
+.railgrp-name {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mut);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.railgrp-n {
+  font-size: var(--fs-micro);
+  color: var(--mut);
+  opacity: 0.7;
+}
+
+/* ---- Finished section: give the summary a real disclosure affordance ---- */
+.donewrap summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: var(--sp-1_5);
+  font-size: var(--fs-micro);
+  color: var(--mut);
+  transition: transform 0.15s ease;
+}
+.donewrap[open] summary::before {
+  transform: rotate(90deg);
+}

@@ -9,7 +9,8 @@ export const ROOT = path.join(dir, '..');
 export const PORT = Number(process.env.PORT) || 3456;
 export const HISTORY_LIMIT = 1000;
 
-export const DB_FILE = path.join(ROOT, 'events.db');
+// AGENT_MONITOR_DB points the event log elsewhere (the e2e smoke test uses a throwaway file)
+export const DB_FILE = process.env.AGENT_MONITOR_DB || path.join(ROOT, 'events.db');
 
 // 0 = keep everything (never delete history unasked); set >0 to prune older events on boot + daily.
 export const RETENTION_DAYS = Number(process.env.RETENTION_DAYS) || 0;

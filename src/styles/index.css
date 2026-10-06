@@ -1,0 +1,15 @@
+/* Stylesheet entry. Order matters: tokens → base → components → responsive/motion
+   overrides last. */
+@import './tokens.css';
+@import './base.css';
+@import './topbar.css';
+@import './rail.css';
+@import './detail.css';
+@import './timeline.css';
+@import './trace.css';
+@import './inspector.css';
+@import './overlays.css';
+@import './palette.css';
+@import './empty.css';
+@import './feedback.css';
+@import './responsive.css';

@@ -5,9 +5,7 @@ import App from './App';
 import { ToastProvider } from './components/Toast';
 import TipLayer from './components/Tip';
 import 'goey-toast/styles.css';
-import './index.css';
-import './legacy.css';
-import './additions.css';
+import './styles/index.css';
 
 // No StrictMode: its dev-only double-invocation of effects would open two SSE
 // connections and double-apply live events.

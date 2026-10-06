@@ -8,6 +8,7 @@
 //   bun test
 
 import { beforeEach, describe, expect, test } from 'bun:test';
+import { createNextState as produce } from '@reduxjs/toolkit';
 import {
   applyEvent,
   reconcileSubs,
@@ -17,6 +18,7 @@ import {
   type SessionsState,
 } from '../src/lib/ingest';
 import type { HookEvent, Session } from '../src/lib/types';
+import { buildTurns } from '../src/lib/turns';
 
 const SID = 'sess-1';
 
@@ -430,3 +432,45 @@ describe('tickHousekeeping', () => {
   });
 });
 
+
+// The live app runs applyEvent inside Redux Toolkit's Immer reducer — one
+// produce() per SSE event. A tool entry lives in both `pending` and `timeline`;
+// across produces those stop being the same object, so a PostToolUse arriving
+// in a later event must still mark the *timeline* row finished.
+describe('live ingestion under Immer (one produce per event)', () => {
+  const live = (s: SessionsState, e: HookEvent) => produce(s, (d) => applyEvent(d as SessionsState, e, true));
+
+  test('PostToolUse in a later event finishes the timeline row', () => {
+    let s = state();
+    s = live(s, ev('SessionStart'));
+    s = live(s, ev('PreToolUse', { tool_name: 'Bash', tool_use_id: 'tu-1', tool_input: { command: 'ls' } }));
+    s = live(s, ev('PostToolUse', { tool_name: 'Bash', tool_use_id: 'tu-1', tool_response: { stdout: 'ok' } }));
+    const row = s.sessions[SID].timeline.find((x) => x.kind === 'tool');
+    expect(row).toMatchObject({ id: 'tu-1', ok: true });
+    expect((row as { outStr: string }).outStr).toContain('ok');
+    expect((row as { dur: number | null }).dur).not.toBeNull();
+    expect(s.sessions[SID].pending['tu-1']).toBeUndefined();
+  });
+
+  test('settlePending on Stop finishes the timeline row too', () => {
+    let s = state();
+    s = live(s, ev('SessionStart'));
+    s = live(s, ev('PreToolUse', { tool_name: 'Read', tool_use_id: 'tu-2' }));
+    s = live(s, ev('UserPromptSubmit', { prompt: 'next' }));
+    const row = s.sessions[SID].timeline.find((x) => x.kind === 'tool');
+    expect(row).toMatchObject({ id: 'tu-2', ok: true });
+    expect((row as { dur: number | null }).dur).not.toBeNull();
+  });
+});
+
+describe('buildTurns', () => {
+  test('a reused prompt_id still yields unique turn keys', () => {
+    const s = state();
+    applyEvent(s, ev('SessionStart'), true);
+    applyEvent(s, ev('UserPromptSubmit', { prompt: 'first', prompt_id: 'same' }), true);
+    applyEvent(s, ev('UserPromptSubmit', { prompt: 'queued', prompt_id: 'same' }), true);
+    const keys = buildTurns(s.sessions[SID]).turns.map((t) => t.key);
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(2);
+  });
+});

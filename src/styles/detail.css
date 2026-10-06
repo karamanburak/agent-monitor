@@ -1,0 +1,184 @@
+/* ---------- detail pane ---------- */
+.detail { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.dwrap { min-height: 0; flex: 1; display: flex; flex-direction: column; padding: var(--sp-6) var(--sp-7) 0; max-width: 1060px; width: 100%; margin: 0 auto; }
+.dwrap.swap { animation: fadeslide 0.22s ease; }
+@keyframes fadeslide { from { opacity: 0; transform: translateY(6px); } }
+
+.dhead { display: flex; align-items: center; gap: var(--sp-4); flex: none; }
+.davatar { width: 42px; height: 42px; border-radius: var(--r-md); flex: none; display: grid; place-items: center;
+           font-weight: 700; font-size: var(--fs-lg); color: var(--on-accent); text-transform: uppercase; }
+/* two lines: name + live status, then where/what (path, model, mode, failures) */
+.dnames { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: var(--sp-1); }
+.dtitle { display: flex; align-items: center; gap: var(--sp-2_5); min-width: 0; }
+.dnames h1 { font-size: var(--fs-lg); letter-spacing: -0.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dmeta { display: flex; align-items: center; gap: var(--sp-1_5); min-width: 0; flex-wrap: wrap; }
+.dpath { font-size: var(--fs-sm); color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+         min-width: 0; flex: 0 1 auto; margin-right: var(--sp-1); }
+.dpath:hover { color: var(--ink-2); }
+.dstatus { flex: none; display: inline-flex; align-items: center; gap: var(--sp-1_5); font-size: var(--fs-xs); font-weight: 500;
+           color: var(--ink-2); border: 1px solid var(--line-2); border-radius: var(--r-pill); padding: 1px var(--sp-2_5); }
+.dstatus .pdot { width: 7px; height: 7px; border-radius: 50%; background: var(--mut); }
+.detail-view.working .dstatus .pdot { background: var(--status-working); }
+.detail-view.working .dstatus { border-color: color-mix(in srgb, var(--status-working) 45%, transparent); }
+.detail-view.waiting .dstatus .pdot { background: var(--status-waiting); animation: pulse 1.4s ease-in-out infinite; }
+.detail-view.waiting .dstatus { border-color: color-mix(in srgb, var(--status-waiting) 50%, transparent); color: var(--status-waiting); }
+
+.dbanner { display: none; margin-top: var(--sp-4); align-items: center; gap: var(--sp-2_5); font-size: var(--fs-base); font-weight: 600; color: var(--warn-ink);
+           background: color-mix(in srgb, var(--status-waiting) 16%, var(--panel)); border: 1px solid color-mix(in srgb, var(--status-waiting) 60%, transparent);
+           border-left: 4px solid var(--status-waiting); border-radius: var(--r-md);
+           padding: var(--sp-3) var(--sp-4); box-shadow: 0 6px 22px -14px color-mix(in srgb, var(--status-waiting) 80%, transparent); }
+.dbanner > .icon { color: var(--status-waiting); }
+.dbanner .bwait { flex: none; font-size: var(--fs-sm); font-weight: 600; color: var(--status-waiting); font-variant-numeric: tabular-nums; }
+.detail-view.waiting .dbanner { display: flex; }
+.dbanner .bmsg { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbanner .bcopy { flex: none; font-size: var(--fs-base); color: var(--warn); line-height: 1;
+                  border: 1px solid color-mix(in srgb, var(--warn) 50%, transparent); border-radius: var(--r-sm); padding: var(--sp-1) var(--sp-2); }
+.dbanner .bcopy:hover { background: color-mix(in srgb, var(--warn) 15%, transparent); }
+
+/* live activity line. Working is the normal state, so it stays calm (one small
+   spinner, no glow) — loud visuals are reserved for needs-you and failures */
+.dnow { display: none; margin-top: var(--sp-4); flex-direction: column; gap: 0; font-size: var(--fs-base);
+        background: var(--panel); border: 1px solid var(--line-2); border-left: 3px solid var(--status-working); border-radius: var(--r-md);
+        padding: 0; overflow: hidden; position: relative; }
+.dnow.show { display: flex; }
+.dnow-head { display: flex; align-items: center; gap: var(--sp-2_5); padding: var(--sp-2_5) var(--sp-4); position: relative; z-index: 1; }
+.spinner { width: 14px; height: 14px; flex: none; border-radius: 50%;
+           border: 2px solid color-mix(in srgb, var(--ok) 25%, transparent); border-top-color: var(--ok); animation: rot 0.8s linear infinite; }
+@keyframes rot { to { transform: rotate(1turn); } }
+.dnow .nverb { flex: none; font-weight: 600; color: var(--ink-2); }
+.dnow b { flex: none; font-weight: 600; }
+.dnow .ndetail { color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dnow .nsince { margin-left: auto; flex: none; font-size: var(--fs-sm); color: var(--mut); }
+
+section h2 { font-size: var(--fs-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+             color: var(--mut); margin: var(--sp-6) 0 var(--sp-2_5); display: flex; align-items: center; gap: var(--sp-2); }
+section h2 .count { color: var(--ink-2); }
+
+/* subagent lane */
+.dsubs { flex: none; }
+.dsubs:not(.has) { display: none; }
+.lane { display: flex; gap: var(--sp-3); overflow-x: auto; padding-bottom: var(--sp-1_5); }
+.agent { flex: none; width: 250px; background: var(--panel); border: 1px solid color-mix(in srgb, var(--sub) 45%, transparent);
+         border-radius: var(--r-lg); padding: var(--sp-3) var(--sp-4); cursor: pointer;
+         transition: width 0.2s ease, border-color 0.15s ease;
+         animation: apop 0.35s cubic-bezier(0.34, 1.4, 0.64, 1) backwards; }
+.agent:hover { border-color: color-mix(in srgb, var(--sub) 85%, transparent); }
+/* click to expand — reveal the full tool line and quote instead of ellipsis */
+.agent.expanded { width: 420px; border-color: color-mix(in srgb, var(--sub) 85%, transparent); padding-bottom: var(--sp-6); }
+.agent.expanded .atool, .agent.expanded .aquote { white-space: normal; overflow: visible; text-overflow: clip; }
+.agent .aexpand { position: absolute; bottom: 7px; right: 12px; font-size: var(--fs-sm); color: var(--mut); opacity: 0.5; }
+.agent:hover .aexpand { opacity: 0.85; }
+.agent.bye { animation: abye 0.3s ease forwards; }
+@keyframes apop { from { opacity: 0; transform: translateY(8px) scale(0.92); } }
+@keyframes abye { to { opacity: 0; transform: scale(0.92); } }
+.agent .ahead { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.agent .adot { width: 7px; height: 7px; border-radius: 50%; background: var(--sub); flex: none; }
+.agent .aname { font-weight: 600; font-size: var(--fs-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent .aage { margin-left: auto; flex: none; font-size: var(--fs-xs); color: var(--mut); }
+.agent .arole { display: block; margin-top: var(--sp-0_5); font-size: var(--fs-xs); color: var(--ink-2);
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent.expanded .arole { white-space: normal; }
+.agent .atype { display: inline-block; margin-top: var(--sp-1_5); font-size: var(--fs-xs); color: var(--ink-2);
+                border: 1px solid var(--line-2); border-radius: var(--r-pill); padding: 1px var(--sp-2); }
+.agent .atool { margin-top: var(--sp-2); font-size: var(--fs-sm); color: var(--mut);
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent .aquote { margin-top: var(--sp-2); font-size: var(--fs-xs); font-style: italic; color: var(--mut);
+                 overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donechips { display: flex; flex-wrap: wrap; gap: var(--sp-1_5); margin-top: var(--sp-2_5); align-items: flex-start; }
+.donechips:empty { display: none; }
+.chip { font-size: var(--fs-xs); color: var(--ink-2); border: 1px solid var(--line-2); border-radius: var(--r-pill);
+        padding: var(--sp-0_5) var(--sp-2_5); display: inline-flex; gap: var(--sp-1_5); align-items: center; cursor: pointer; }
+.chip:hover { border-color: var(--mut); }
+.chip .chead { display: inline-flex; gap: var(--sp-1_5); align-items: center; }
+.chip .cd { color: var(--mut); }
+.chip .cd::before { content: "✓ "; color: var(--ok); }
+.chip .cbody { display: none; }
+/* expanded finished card — a cool steel colour, deliberately distinct from the
+   pink (--sub) of running subagents so running vs done reads at a glance */
+.chip.expanded { flex-direction: column; align-items: stretch; gap: var(--sp-1); width: 300px;
+                 border-radius: var(--r-lg); border-color: color-mix(in srgb, var(--done) 55%, transparent);
+                 background: color-mix(in srgb, var(--done) 8%, transparent); padding: var(--sp-3) var(--sp-3); }
+.chip.expanded .chead { justify-content: space-between; font-size: var(--fs-base); font-weight: 600; color: var(--ink); }
+.chip.expanded .cbody { display: flex; flex-direction: column; gap: var(--sp-1); }
+.chip.expanded .crole { font-size: var(--fs-xs); color: var(--ink-2); }
+.chip.expanded .ctype { font-size: var(--fs-xs); color: var(--ink-2); border: 1px solid var(--line-2);
+                        border-radius: var(--r-pill); padding: 1px var(--sp-2); align-self: flex-start; }
+.chip.expanded .cquote { font-size: var(--fs-xs); font-style: italic; color: var(--mut); }
+
+.dfoot { flex: none; display: flex; align-items: baseline; gap: var(--sp-3); border-top: 1px solid var(--line);
+         margin-top: auto; padding: var(--sp-2_5) 0 var(--sp-4); font-size: var(--fs-sm); color: var(--mut); }
+.dfoot .fmain { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dfoot .ftok { margin-left: auto; flex: none; color: var(--ink-2); }
+.dfoot .ftok b { font-weight: 600; color: var(--ink); }
+
+/* ---------- header badges (model / permission mode / effort) ---------- */
+.dbadge { flex: none; font-size: var(--fs-xs); padding: 1px var(--sp-2); border-radius: var(--r-pill); border: 1px solid var(--line-2);
+          color: var(--ink-2); background: var(--panel-2); white-space: nowrap; }
+.dbadge.warn { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 50%, transparent); }
+.dbadge.danger { color: var(--err); border-color: color-mix(in srgb, var(--err) 50%, transparent); }
+
+/* ---- AgentLane cards/chips are <button>s now: keep their text left-aligned ---- */
+.agent,
+.chip {
+  text-align: left;
+  font: inherit;
+}
+/* small readability bumps on non-measured card text (not the trace axis) */
+.agent .arole,
+.agent .atype,
+.chip.expanded .crole,
+.chip.expanded .ctype {
+  font-size: var(--fs-xs);
+}
+.agent .aquote,
+.chip.expanded .cquote {
+  font-size: var(--fs-sm);
+}
+
+/* ---- body: timeline column + (wide screens) a session summary column ---- */
+.dbody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.dmain { flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
+.dside { display: none; }
+@media (min-width: 1280px) {
+  .dwrap { max-width: 1400px; }
+  .dbody { flex-direction: row; gap: var(--sp-6); }
+  .dside { display: flex; flex-direction: column; gap: var(--sp-3); flex: none; width: 248px;
+           padding: var(--sp-4) 0 var(--sp-4); overflow-y: auto; }
+  .dfoot { display: none; }
+  /* with the inspector open there is no room for a third column */
+  body.inspopen .dside { display: none; }
+  body.inspopen .dfoot { display: flex; }
+  /* the summary column already carries the failure count + toggle */
+  body:not(.inspopen) .dfails { display: none; }
+}
+.dscard { margin: 0; padding: var(--sp-2) var(--sp-4); background: var(--panel); border: 1px solid var(--line);
+          border-radius: var(--r-md); box-shadow: 0 1px 0 var(--hi) inset; }
+.dsrow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3);
+         padding: var(--sp-1_5) 0; font-size: var(--fs-sm); }
+.dsrow + .dsrow { border-top: 1px solid var(--line); }
+.dsrow dt { color: var(--mut); }
+.dsrow dd { margin: 0; color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.dsrow.money dd { color: var(--ok); }
+.dslink { font-weight: 600; color: var(--status-failed); border-radius: var(--r-sm); padding: 0 var(--sp-1_5); }
+.dslink:hover, .dslink.on { background: color-mix(in srgb, var(--status-failed) 14%, transparent); }
+.dslink.id { font-weight: 500; color: var(--ink-2); font-size: var(--fs-xs); }
+.dslink.id:hover { background: var(--panel-2); color: var(--ink); }
+.dfoot .fid { cursor: pointer; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.dfoot .fid:hover { color: var(--ink-2); }
+
+/* header failure count doubles as the failures-only toggle */
+.dfails.on { background: color-mix(in srgb, var(--status-failed) 16%, transparent); }
+.fitbtn.iconbtn { padding: var(--sp-1) var(--sp-1_5); }
+
+/* ---- subagent cards: type is the name; codename + quote are secondary ---- */
+.agent .acode { display: block; margin-top: var(--sp-1); font-size: var(--fs-xs); color: var(--mut);
+                overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent:not(.expanded) .aquote { display: none; }
+.chip.expanded .cresult { font-size: var(--fs-xs); color: var(--ink-2); line-height: 1.5; white-space: normal; }
+
+/* nothing running: the finished chips sit inline with their label instead of
+   claiming a whole section */
+.dsubs.compact { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); margin-top: var(--sp-4); }
+.dsubs.compact h2 { margin: 0; }
+.dsubs.compact .lane { display: none; }
+.dsubs.compact .donechips { margin-top: 0; }

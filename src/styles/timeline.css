@@ -1,0 +1,176 @@
+/* timeline */
+.dtl { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.tl { overflow-y: auto; min-height: 0; flex: 1; padding-bottom: var(--sp-7); }
+.trow { display: flex; align-items: baseline; gap: var(--sp-2_5); padding: var(--sp-1) var(--sp-0_5); min-width: 0; font-size: var(--fs-base); }
+.trow.anim { animation: slidein 0.25s ease; }
+@keyframes slidein { from { opacity: 0; transform: translateY(-6px); } }
+.trow .tt { flex: none; width: 54px; font-size: var(--fs-xs); color: var(--mut); }
+.trow .tdot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--c, var(--mut));
+              position: relative; top: -1px; }
+.trow .tname { flex: none; font-weight: 600; color: var(--ink-2); }
+.trow .tdet { color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trow .tag { flex: none; font-size: var(--fs-xs); color: var(--sub); border: 1px solid color-mix(in srgb, var(--sub) 40%, transparent);
+             border-radius: var(--r-pill); padding: 0 var(--sp-2); }
+.trow .tdur { margin-left: auto; flex: none; font-size: var(--fs-xs); color: var(--mut); }
+.trow .tdur.run { color: var(--acc); }
+.trow .tdur.fail { color: var(--status-failed); }
+.trow.sys .tname { color: var(--mut); font-weight: 500; }
+.tprompt { display: flex; align-items: baseline; gap: var(--sp-2_5); margin: var(--sp-4) 0 var(--sp-1); padding: var(--sp-2) var(--sp-2_5) var(--sp-2) var(--sp-0_5);
+           border-top: 1px solid var(--line); min-width: 0; }
+.tprompt:first-child { margin-top: var(--sp-0_5); border-top: none; }
+.tprompt .tt { flex: none; width: 54px; font-size: var(--fs-xs); color: var(--mut); }
+.tprompt .bar { flex: none; width: 3px; align-self: stretch; border-radius: 3px; background: var(--prompt); }
+.tprompt .ptext { color: var(--ink-2); font-size: var(--fs-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* collapsible turns — one <details> per prompt, summary shows the roll-up */
+.turn { border-top: 1px solid var(--line); }
+.turn:first-child { border-top: none; }
+.turn > summary { display: flex; align-items: baseline; gap: var(--sp-2_5); padding: var(--sp-2) var(--sp-1_5) var(--sp-2) var(--sp-0_5);
+                  cursor: pointer; list-style: none; min-width: 0; border-radius: var(--r-sm); }
+.turn > summary::-webkit-details-marker { display: none; }
+.turn > summary:hover { background: var(--panel); }
+.turn .tt { flex: none; width: 54px; font-size: var(--fs-xs); color: var(--mut); }
+.turn .bar { flex: none; width: 3px; align-self: stretch; border-radius: 3px; background: var(--prompt); }
+.turn .ptext { flex: 1; min-width: 0; color: var(--ink-2); font-size: var(--fs-base);
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.turn .tsum { flex: none; font-size: var(--fs-xs); color: var(--mut); white-space: nowrap; }
+.turn .tsum .bad { color: var(--status-failed); }
+.turn .tsum .runy { color: var(--acc); }
+.turn .carr { flex: none; align-self: center; color: var(--mut); font-size: var(--fs-micro); transition: transform 0.15s ease; }
+.turn[open] .carr { transform: rotate(180deg); }
+.turn .tbody { padding: 0 0 var(--sp-2) var(--sp-1); }
+
+.sfail { flex: none; font-size: var(--fs-xs); font-weight: 600; color: var(--status-failed); }
+.sfail:empty { display: none; }
+.dfails { flex: none; display: inline-flex; align-items: center; font-size: var(--fs-xs); color: var(--status-failed);
+          border: 1px solid color-mix(in srgb, var(--status-failed) 50%, transparent); border-radius: var(--r-pill); padding: 1px var(--sp-2); cursor: pointer; }
+.dfails:hover { background: color-mix(in srgb, var(--status-failed) 10%, transparent); }
+
+
+/* ---------- result rows (agent's final message) ---------- */
+.trow.tresult { flex-wrap: wrap; align-items: center; cursor: pointer; }
+.trow.tresult .rlabel { flex: none; font-weight: 700; color: var(--ok); font-size: var(--fs-sm); }
+.trow.tresult .rtok { margin-left: auto; flex: none; color: var(--mut); font-size: var(--fs-xs); }
+.trow.tresult .rmsg { flex-basis: 100%; margin: var(--sp-1) 0 var(--sp-0_5) var(--sp-16); padding: var(--sp-2) var(--sp-3); color: var(--ink-2);
+                      border-left: 2px solid var(--ok); background: color-mix(in srgb, var(--ok) 6%, transparent); border-radius: 0 var(--r-sm) var(--r-sm) 0;
+                      white-space: pre-wrap; word-break: break-word; font-size: var(--fs-sm); line-height: 1.55;
+                      max-height: 4.7em; overflow: hidden; }
+.trow.tresult.exp .rmsg { max-height: none; }
+.tsum .tcost { color: var(--ok); font-variant-numeric: tabular-nums; }
+
+/* Timeline hover indicator — makes the row under the mouse obvious while scanning */
+.trow,
+.tprompt {
+  border-radius: var(--r-sm);
+  box-shadow: inset 3px 0 0 transparent;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.trow:hover,
+.tprompt:hover {
+  background: color-mix(in srgb, var(--acc) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--acc);
+}
+/* keep the turn summary hover consistent with the accent cue */
+.turn > summary {
+  box-shadow: inset 3px 0 0 transparent;
+  transition: background 0.1s ease, box-shadow 0.1s ease;
+}
+.turn > summary:hover {
+  box-shadow: inset 3px 0 0 var(--acc);
+}
+
+/* ---- Timeline: in-session filter box next to the Fit/Markdown controls ---- */
+.tlsearch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tlsearch svg {
+  position: absolute;
+  left: 7px;
+  color: var(--mut);
+  pointer-events: none;
+}
+.tlsearch input {
+  width: 136px;
+  transition: width 0.15s ease, border-color 0.15s ease;
+  font: inherit;
+  font-size: var(--fs-xs);
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-6);
+}
+.tlsearch input::placeholder {
+  color: var(--mut);
+}
+.tlsearch input:focus {
+  outline: none;
+  border-color: var(--acc);
+  width: 200px; /* room to type without crowding the toolbar at rest */
+}
+.detail-view.tracemode .tlsearch {
+  display: none;
+}
+
+/* ---- Timeline filter: match highlighting + result count ----
+   (same treatment as the History overlay's .hsnip mark, for one system) */
+.dtl mark {
+  padding: 0 var(--sp-0_5);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--acc) 22%, transparent);
+  color: var(--ink);
+}
+.tl-matchcount {
+  color: var(--mut);
+  font-size: var(--fs-xs);
+  margin: 0 0 var(--sp-2);
+}
+
+/* ---- row anatomy: tool-family glyph instead of a uniform dot; repeated
+   timestamps fade out (they reappear on hover) so only changes catch the eye ---- */
+.trow .tt.dup,
+.tprompt .tt.dup {
+  color: transparent;
+}
+.trow:hover .tt.dup {
+  color: var(--mut);
+}
+.trow .ticon {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  width: 14px;
+  color: var(--c, var(--mut));
+}
+.trow.tool .tname {
+  color: var(--ink);
+}
+.trow.tool.running .tname {
+  color: var(--acc);
+}
+/* failures are the one row state that should stand out while scanning */
+.trow.tool.failed {
+  background: color-mix(in srgb, var(--status-failed) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--status-failed);
+}
+.trow.tool.failed .tname {
+  color: var(--status-failed);
+}
+.trow.agentrow .tname {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+/* an open turn shows its running row itself, so the roll-up's "running" is for collapsed turns only */
+.turn[open] > summary .runwrap {
+  display: none;
+}
+.trow .tdur.run {
+  font-variant-numeric: tabular-nums;
+}
+/* opening a turn eases its rows in rather than snapping */
+.turn[open] > .tbody {
+  animation: fadeslide 0.18s ease;
+}

@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useRef, type JSX } from 'react';
 import { useAppSelector } from '../store/hooks';
 import { clock, fmtDur, fmtMoney, fmtTokens } from '../lib/format';
-import { legendFor } from '../lib/legends';
+import { agentTypeLabel, legendFor } from '../lib/legends';
 import { buildTurns } from '../lib/turns';
 import { useNow } from '../hooks/useNow';
 import type { NoteEntry, PromptEntry, Session, StatusKind, ToolEntry } from '../lib/types';
@@ -349,11 +349,13 @@ export default function Trace({
     );
   };
 
+  // alternate lane tint so parallel subagent lanes stay separable when many run at once
+  let laneIdx = 0;
   const lane = (label: JSX.Element, items: ToolEntry[], extra: JSX.Element | null, laneKey: string) => {
     const pack = packRows(items);
     const H = pack.count === 1 ? 28 : 10 + pack.count * 17;
     return (
-      <div className="tr-lane" key={laneKey} style={{ height: H + 'px' }}>
+      <div className={'tr-lane' + (laneIdx++ % 2 ? ' alt' : '')} key={laneKey} style={{ height: H + 'px' }}>
         {label}
         {extra}
         {items.map((en, i) => barEl(en, pack.idx[i], pack.count, laneKey + ':' + i))}
@@ -367,15 +369,20 @@ export default function Trace({
     lane(
       <div className="tr-label" title={`Main agent · ${fmtDur(mainBusy)} busy`}>
         Main
-        {mainBusy ? <span className="tr-lbldur">{fmtDur(mainBusy)}</span> : null}
+        {mainBusy >= 1000 ? <span className="tr-lbldur">{fmtDur(mainBusy)}</span> : null}
       </div>,
       mainTools,
       null,
       'main',
     ),
   ];
+  const typeCount = new Map<string, number>();
+  for (const sa of subs) typeCount.set(sa.type, (typeCount.get(sa.type) || 0) + 1);
   for (const sa of subs) {
     const leg = legendFor(sa.id);
+    // codename only when two lanes would otherwise share a label
+    const laneName =
+      (typeCount.get(sa.type) || 0) > 1 ? `${agentTypeLabel(sa.type)} · ${leg.f.split(' ').pop()}` : agentTypeLabel(sa.type);
     const saTools = tools.filter((en) => en.agent === sa.id);
     const saBusy = laneBusy(saTools);
     const lifeEnd = sa.running ? now : sa.stopped || sa.started;
@@ -396,10 +403,10 @@ export default function Trace({
       lane(
         <div
           className={'tr-label' + (sa.running ? ' live' : '')}
-          title={`${leg.f} · ${sa.type} · ${fmtDur(saBusy)} busy`}
+          title={`${agentTypeLabel(sa.type)} (${leg.f}) · ${fmtDur(saBusy)} busy`}
         >
-          {leg.e} {leg.f.split(' ').pop()}
-          {saBusy ? <span className="tr-lbldur">{fmtDur(saBusy)}</span> : null}
+          <span className="tr-lblname">{laneName}</span>
+          {saBusy >= 1000 ? <span className="tr-lbldur">{fmtDur(saBusy)}</span> : null}
         </div>,
         saTools,
         life,
@@ -409,7 +416,7 @@ export default function Trace({
   }
 
   return (
-    <div className={'trace' + (failOnly ? ' failonly' : '')} ref={elRef} style={{ display: 'block' }} onClick={onClick}>
+    <div className={'trace' + (failOnly ? ' failonly' : '')} ref={elRef} onClick={onClick}>
       <div className="tr-scroll">
         <div className="tr-inner">
           <div className="tr-axis">{ticks}</div>

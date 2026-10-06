@@ -1,0 +1,46 @@
+/* Reset, document layout grid and global primitives. */
+
+/* minimal reset (the subset of Tailwind's old preflight this UI relies on) */
+*, ::before, ::after { margin: 0; box-sizing: border-box; border: 0 solid var(--line-2); }
+button, input, select, textarea { font: inherit; color: inherit; letter-spacing: inherit; padding: 0; }
+button, [role="button"] { cursor: pointer; }
+:disabled { cursor: default; }
+ol, ul, menu { list-style: none; padding: 0; }
+h1, h2, h3, h4, h5, h6 { font-size: inherit; font-weight: inherit; }
+a { color: inherit; text-decoration: inherit; }
+code, kbd, pre, samp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 1em; }
+table { text-indent: 0; border-color: inherit; border-collapse: collapse; }
+summary { display: list-item; }
+img, svg, video, canvas, iframe { display: block; vertical-align: middle; }
+img, video { max-width: 100%; height: auto; }
+::placeholder { opacity: 1; color: var(--mut); }
+[hidden] { display: none; }
+html, body, #root { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: var(--fs-base)/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+/* app frame: 52px top bar + content (a connection banner adds a row, see feedback.css) */
+#root { display: grid; grid-template-rows: 52px 1fr; overflow: hidden; }
+/* inline SVG icons align with text everywhere; flex parents just slot them in */
+.icon { flex: none; vertical-align: -2px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+h1, h2 { font-weight: 600; }
+:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; border-radius: var(--r-sm); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--ink) 10%, transparent); border-radius: var(--r-sm); border: 3px solid var(--bg); }
+::-webkit-scrollbar-track { background: transparent; }
+
+/* subtle physical top-edge highlight on raised surfaces */
+.agent, .ovbox, .rplayer, .trace, .dnow { box-shadow: 0 1px 0 var(--hi) inset; }
+
+/* ---------- layout: session rail + detail pane ---------- */
+.shell { display: grid; grid-template-columns: var(--railw, 320px) 1fr; min-height: 0; }
+body.railhidden .shell { grid-template-columns: 1fr; }
+body.railhidden .rail { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

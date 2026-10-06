@@ -14,10 +14,16 @@ export function buildTurns(s: Session): { pre: TimelineEntry[]; turns: Turn[] } 
     prompt: null,
     entries: [],
   };
+  // Claude Code can reuse a prompt_id across messages (e.g. queued follow-ups), so keys get a
+  // suffix on repeat — duplicate React keys would mix up the collapsible turns.
+  const seen = new Map<string, number>();
   for (const en of s.timeline) {
     if (en.kind === 'prompt') {
       turns.push(cur);
-      cur = { key: en.promptId ? 'p' + en.promptId : 't' + en.t, prompt: en, entries: [] };
+      const base = en.promptId ? 'p' + en.promptId : 't' + en.t;
+      const n = seen.get(base) || 0;
+      seen.set(base, n + 1);
+      cur = { key: n ? `${base}~${n}` : base, prompt: en, entries: [] };
     } else cur.entries.push(en);
   }
   turns.push(cur);

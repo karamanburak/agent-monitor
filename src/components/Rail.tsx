@@ -7,17 +7,28 @@ import { displayStatus, SOURCE_LABEL } from '../lib/constants';
 import { basename, rel } from '../lib/format';
 import { partitionSessions, sessionOneLiner } from '../lib/selectors';
 import { useNow } from '../hooks/useNow';
+import Icon from './Icon';
+import Radio from './Radio';
 import TokenFooter from './TokenFooter';
+import type { Session } from '../lib/types';
 
 const clampW = (w: number) => Math.min(480, Math.max(200, w));
 
-export default function Rail({ onRefreshUsage }: { onRefreshUsage: () => Promise<void> }) {
+export default function Rail({
+  onRefreshUsage,
+  onOpenStats,
+}: {
+  onRefreshUsage: () => Promise<void>;
+  onOpenStats: () => void;
+}) {
   const dispatch = useAppDispatch();
   const sessions = useAppSelector((s) => s.sessions.sessions);
   const query = useAppSelector((s) => s.ui.railQuery);
   const railStatus = useAppSelector((s) => s.ui.railStatus);
   const selectedId = useAppSelector((s) => s.ui.selectedId);
   const userPinned = useAppSelector((s) => s.ui.userPinned);
+  const showRadio = useAppSelector((s) => s.ui.showRadio);
+  const showTokens = useAppSelector((s) => s.ui.showTokens);
   const nowSec = Math.floor(useNow() / 1000); // keeps relative times + status decay fresh
 
   const railWRef = useRef(clampW(+(localStorage.getItem('railw') || 0) || 320));
@@ -31,7 +42,24 @@ export default function Rail({ onRefreshUsage }: { onRefreshUsage: () => Promise
     () => partitionSessions(sessions, query, railStatus),
     [sessions, query, railStatus, nowSec],
   );
-  const liveOrder = useMemo(() => live.map((s) => s.id), [live]);
+  // Group by project once there's enough going on to make triage-by-project worth it.
+  // Groups keep `live`'s existing triage order (needs-you first) inside and across themselves —
+  // a group surfaces as soon as its first (highest-priority) session is reached.
+  const groups = useMemo(() => {
+    if (live.length < 3) return null;
+    const byProject = new Map<string, Session[]>();
+    for (const s of live) {
+      const key = basename(s.cwd) || '?';
+      const arr = byProject.get(key);
+      if (arr) arr.push(s);
+      else byProject.set(key, [s]);
+    }
+    return byProject.size >= 2 ? byProject : null;
+  }, [live]);
+  const liveOrder = useMemo(
+    () => (groups ? Array.from(groups.values()).flat() : live).map((s) => s.id),
+    [groups, live],
+  );
 
   // auto-follow the most-recently-active live session until the user pins one; clear when none live
   useEffect(() => {
@@ -83,13 +111,72 @@ export default function Rail({ onRefreshUsage }: { onRefreshUsage: () => Promise
     el.addEventListener('pointercancel', up, { once: true });
   };
 
+  const onResizeReset = () => {
+    railWRef.current = 320;
+    document.documentElement.style.setProperty('--railw', railWRef.current + 'px');
+    localStorage.removeItem('railw');
+  };
+
+  const renderRow = (s: Session) => {
+    const st = displayStatus(s);
+    const justDone = st === 'idle' && s.doneAt && Date.now() - s.doneAt < 120000;
+    const cls = 'srow ' + st + (justDone ? ' justdone' : '') + (s.id === selectedId ? ' sel' : '');
+    const sub = sessionOneLiner(s, st);
+    const nm = basename(s.cwd);
+    return (
+      // plain container with sibling <button>s to avoid nested interactive elements
+      <div key={s.id} className={cls} role="listitem">
+        <button
+          type="button"
+          className="srow-main"
+          aria-current={s.id === selectedId || undefined}
+          aria-label={`Open ${nm} — ${sub}`}
+          onClick={() => dispatch(selectSession(s.id))}
+        >
+          <span className="sdot" aria-hidden="true"></span>
+          <span className="smain">
+            <span className="sname">
+              {nm}
+              {s.source && s.source !== 'claude' && s.source !== 'claude-code' && (
+                <span className="ssource">{SOURCE_LABEL[s.source] || s.source}</span>
+              )}
+            </span>
+            <span className="ssub" data-tip={sub}>
+              {sub}
+            </span>
+          </span>
+        </button>
+        <span className="sfail" title="failed tool calls">
+          {s.failCount ? s.failCount + '✗' : ''}
+        </span>
+        {st === 'waiting' && s.waitingSince ? (
+          <span className="swhen swait" title={`Waiting for your input for ${rel(s.waitingSince)}`}>
+            <Icon name="hourglass" size={10} />
+            {rel(s.waitingSince)}
+          </span>
+        ) : (
+          <span className="swhen">{rel(s.lastSeen)}</span>
+        )}
+        <button
+          type="button"
+          className="sclose"
+          title="Dismiss this session from the list"
+          aria-label={`Dismiss ${nm}`}
+          onClick={() => dispatch(removeSession(s.id))}
+        >
+          ✕
+        </button>
+      </div>
+    );
+  };
+
   return (
     <aside className="rail" aria-label="Sessions">
       <div className="rail-scroll">
         <div className={'rail-search' + (query ? ' has' : '')}>
           <div className="wrap">
             <span className="mag" aria-hidden="true">
-              🔍
+              <Icon name="search" size={13} />
             </span>
             <input
               type="search"
@@ -110,73 +197,42 @@ export default function Rail({ onRefreshUsage }: { onRefreshUsage: () => Promise
             </button>
           </div>
         </div>
-        <div className="rail-filters" role="group" aria-label="Filter by status">
-          {(
-            [
-              ['all', 'All'],
-              ['needs', 'Needs you'],
-              ['working', 'Working'],
-              ['failed', 'Failed'],
-            ] as [RailStatus, string][]
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              className={'rail-filter' + (railStatus === key ? ' on' : '')}
-              aria-pressed={railStatus === key}
-              onClick={() => dispatch(setRailStatus(key))}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* status chips earn their place only once there is something to triage */}
+        {(live.length + finished.length >= 3 || railStatus !== 'all') && (
+          <div className="rail-filters" role="group" aria-label="Filter by status">
+            {(
+              [
+                ['all', 'All'],
+                ['needs', 'Needs you'],
+                ['working', 'Working'],
+                ['failed', 'Failed'],
+              ] as [RailStatus, string][]
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                className={'rail-filter' + (railStatus === key ? ' on' : '')}
+                aria-pressed={railStatus === key}
+                onClick={() => dispatch(setRailStatus(key))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <h2 className="rail-label">Sessions</h2>
         <div role="list">
-          {live.map((s) => {
-            const st = displayStatus(s);
-            const justDone = st === 'idle' && s.doneAt && Date.now() - s.doneAt < 120000;
-            const cls = 'srow ' + st + (justDone ? ' justdone' : '') + (s.id === selectedId ? ' sel' : '');
-            const sub = sessionOneLiner(s, st);
-            const nm = basename(s.cwd);
-            return (
-              // plain container with sibling <button>s to avoid nested interactive elements
-              <div key={s.id} className={cls} role="listitem">
-                <button
-                  type="button"
-                  className="srow-main"
-                  aria-current={s.id === selectedId || undefined}
-                  aria-label={`Open ${nm} — ${sub}`}
-                  onClick={() => dispatch(selectSession(s.id))}
-                >
-                  <span className="sdot" aria-hidden="true"></span>
-                  <span className="smain">
-                    <span className="sname">
-                      {nm}
-                      {s.source && s.source !== 'claude' && s.source !== 'claude-code' && (
-                        <span className="ssource">{SOURCE_LABEL[s.source] || s.source}</span>
-                      )}
-                    </span>
-                    <span className="ssub" data-tip={sub}>
-                      {sub}
-                    </span>
-                  </span>
-                </button>
-                <span className="sfail" title="failed tool calls">
-                  {s.failCount ? s.failCount + '✗' : ''}
-                </span>
-                <span className="swhen">{rel(s.lastSeen)}</span>
-                <button
-                  type="button"
-                  className="sclose"
-                  title="Dismiss this session from the list"
-                  aria-label={`Dismiss ${nm}`}
-                  onClick={() => dispatch(removeSession(s.id))}
-                >
-                  ✕
-                </button>
-              </div>
-            );
-          })}
+          {groups
+            ? Array.from(groups.entries()).map(([project, arr]) => (
+                <div className="railgrp" key={project}>
+                  <div className="railgrp-head">
+                    <span className="railgrp-name">{project}</span>
+                    <span className="railgrp-n">{arr.length}</span>
+                  </div>
+                  {arr.map((s) => renderRow(s))}
+                </div>
+              ))
+            : live.map((s) => renderRow(s))}
         </div>
         {!live.length && (
           <div className="rail-empty">
@@ -202,8 +258,15 @@ export default function Rail({ onRefreshUsage }: { onRefreshUsage: () => Promise
           </details>
         )}
       </div>
-      <TokenFooter onRefresh={onRefreshUsage} />
-      <div className="rail-resize" ref={resizeRef} title="Drag to resize" onPointerDown={onResizeDown}></div>
+      {showRadio && <Radio />}
+      {showTokens && <TokenFooter onRefresh={onRefreshUsage} onOpenStats={onOpenStats} />}
+      <div
+        className="rail-resize"
+        ref={resizeRef}
+        title="Drag to resize · double-click to reset"
+        onPointerDown={onResizeDown}
+        onDoubleClick={onResizeReset}
+      ></div>
     </aside>
   );
 }

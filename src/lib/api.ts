@@ -1,4 +1,12 @@
-import type { HistorySession, HookEvent, SessionUsageEntry, StatsDay, UsageResponse } from './types';
+import type {
+  HistorySession,
+  HookEvent,
+  SearchSession,
+  SessionUsageEntry,
+  SetupInfo,
+  StatsDay,
+  UsageResponse,
+} from './types';
 
 export async function getUsage(): Promise<UsageResponse> {
   return (await fetch('/usage')).json();
@@ -18,4 +26,12 @@ export async function getHistory(): Promise<{ sessions: HistorySession[] }> {
 
 export async function getSessionEvents(id: string): Promise<{ events: HookEvent[] }> {
   return (await fetch('/session?id=' + encodeURIComponent(id))).json();
+}
+
+export async function searchHistory(q: string): Promise<{ sessions: SearchSession[]; total: number }> {
+  return (await fetch('/search?q=' + encodeURIComponent(q))).json();
+}
+
+export async function getSetup(): Promise<SetupInfo> {
+  return (await fetch('/setup')).json();
 }

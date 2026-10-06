@@ -1,9 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { toggleRadio, toggleTokens } from '../store/uiSlice';
 import { useTheme } from '../hooks/useTheme';
+import Icon from './Icon';
 import type { useAlerts } from '../hooks/useAlerts';
 
-export default function SettingsMenu({ alerts }: { alerts: ReturnType<typeof useAlerts> }) {
+export default function SettingsMenu({
+  alerts,
+  onOpenShortcuts,
+  onOpenNotes,
+}: {
+  alerts: ReturnType<typeof useAlerts>;
+  onOpenShortcuts: () => void;
+  onOpenNotes: () => void;
+}) {
   const { theme, toggle: toggleTheme } = useTheme();
+  const dispatch = useAppDispatch();
+  const showRadio = useAppSelector((s) => s.ui.showRadio);
+  const showTokens = useAppSelector((s) => s.ui.showTokens);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -25,23 +39,29 @@ export default function SettingsMenu({ alerts }: { alerts: ReturnType<typeof use
 
   const anyAlert = alerts.soundOn || alerts.notifOn;
 
+  const Toggle = ({ on }: { on: boolean }) => (
+    <span className={'si-toggle' + (on ? ' on' : '')} aria-hidden="true">
+      {on ? 'On' : 'Off'}
+    </span>
+  );
+
   return (
     <div className="setwrap" ref={wrapRef}>
       <button
         className={'tbtn tbtn-icon' + (anyAlert ? ' has-alert' : '')}
-        title="Settings — theme, sound & alerts"
+        title="Settings — theme, alerts & extras"
         aria-label="Settings"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        ⚙
+        <Icon name="sliders" size={15} />
       </button>
       {open && (
         <div className="setmenu" role="menu" aria-label="Settings">
           <button className="setitem" role="menuitem" onClick={toggleTheme}>
             <span className="si-ico" aria-hidden="true">
-              {theme === 'light' ? '☀️' : '🌙'}
+              <Icon name={theme === 'light' ? 'sun' : 'moon'} />
             </span>
             <span className="si-lbl">Theme</span>
             <span className="si-val">{theme === 'light' ? 'Light' : 'Dark'}</span>
@@ -53,12 +73,10 @@ export default function SettingsMenu({ alerts }: { alerts: ReturnType<typeof use
             onClick={alerts.toggleSound}
           >
             <span className="si-ico" aria-hidden="true">
-              {alerts.soundOn ? '🔊' : '🔈'}
+              <Icon name={alerts.soundOn ? 'volume-on' : 'volume-off'} />
             </span>
             <span className="si-lbl">Sound</span>
-            <span className={'si-toggle' + (alerts.soundOn ? ' on' : '')} aria-hidden="true">
-              {alerts.soundOn ? 'On' : 'Off'}
-            </span>
+            <Toggle on={alerts.soundOn} />
           </button>
           {alerts.notifSupported && (
             <button
@@ -68,14 +86,64 @@ export default function SettingsMenu({ alerts }: { alerts: ReturnType<typeof use
               onClick={alerts.toggleNotif}
             >
               <span className="si-ico" aria-hidden="true">
-                🔔
+                <Icon name="bell" />
               </span>
               <span className="si-lbl">Desktop alerts</span>
-              <span className={'si-toggle' + (alerts.notifOn ? ' on' : '')} aria-hidden="true">
-                {alerts.notifOn ? 'On' : 'Off'}
-              </span>
+              <Toggle on={alerts.notifOn} />
             </button>
           )}
+          <button
+            className="setitem"
+            role="menuitemcheckbox"
+            aria-checked={showTokens}
+            onClick={() => dispatch(toggleTokens())}
+          >
+            <span className="si-ico" aria-hidden="true">
+              <Icon name="bar-chart" />
+            </span>
+            <span className="si-lbl">Token usage footer</span>
+            <Toggle on={showTokens} />
+          </button>
+          <button
+            className="setitem"
+            role="menuitemcheckbox"
+            aria-checked={showRadio}
+            onClick={() => dispatch(toggleRadio())}
+          >
+            <span className="si-ico" aria-hidden="true">
+              <Icon name="music" />
+            </span>
+            <span className="si-lbl">Radio player</span>
+            <Toggle on={showRadio} />
+          </button>
+          <button
+            className="setitem"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onOpenShortcuts();
+            }}
+          >
+            <span className="si-ico" aria-hidden="true">
+              <Icon name="keyboard" />
+            </span>
+            <span className="si-lbl">Keyboard shortcuts</span>
+            <span className="si-val">?</span>
+          </button>
+          <button
+            className="setitem"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onOpenNotes();
+            }}
+          >
+            <span className="si-ico" aria-hidden="true">
+              <Icon name="note" />
+            </span>
+            <span className="si-lbl">Notes scratchpad</span>
+            <span className="si-val">N</span>
+          </button>
           <div className="sethint">Alerts fire when a session needs you or finishes a long task.</div>
         </div>
       )}

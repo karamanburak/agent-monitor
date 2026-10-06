@@ -25,8 +25,8 @@ export default function ConnectionBanner() {
   return (
     <div className="connbanner" role="status" aria-live="polite">
       <span className="cb-dot" aria-hidden="true"></span>
-      Can't reach the monitor server — reconnecting… Events may be delayed. Check that <code>bun run dev</code> is
-      still running.
+      Can't reach the monitor server — reconnecting… Events may be delayed. Check that <code>bun run dev</code> is still
+      running.
     </div>
   );
 }

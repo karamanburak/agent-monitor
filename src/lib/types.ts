@@ -152,6 +152,8 @@ export interface Session {
   lastResult: string;
   lastResultAt: number;
   waitMsg?: string | null;
+  // when the session entered 'waiting' (0 = not waiting); drives triage ordering + wait badges
+  waitingSince: number;
   subagents: Subagent[];
   timeline: TimelineEntry[];
   // plain record (not a Map) so it lives happily inside Redux/Immer state.
@@ -189,6 +191,32 @@ export interface SessionUsageEntry {
   out: number;
   cache: number;
   cost: number;
+}
+// One session's worth of full-text matches from GET /search.
+export interface SearchSession {
+  id: string;
+  cwd: string;
+  lastMatch: number;
+  hits: number;
+  // snippets with \x01…\x02 around matched words
+  snips: string[];
+}
+// GET /setup — read-only local checks behind the first-run checklist.
+export interface SetupInfo {
+  root: string;
+  hookPath: string;
+  hookExecutable: boolean;
+  settingsFound: boolean;
+  registered: string[];
+  missing: string[];
+  otherPath: boolean;
+  eventCount: number;
+}
+// A project-wide note, persisted server-side — separate from the per-session NoteEntry above.
+export interface PinnedNote {
+  id: number;
+  created_at: number;
+  text: string;
 }
 export interface HistorySession {
   id: string;

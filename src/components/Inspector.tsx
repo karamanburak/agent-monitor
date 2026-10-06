@@ -1,6 +1,8 @@
+import { useEffect, useRef } from 'react';
 import { clock, fmtDur, lineDiff } from '../lib/format';
-import { legendFor } from '../lib/legends';
+import { agentDisplay } from '../lib/legends';
 import { useToast } from './Toast';
+import Icon from './Icon';
 import type { EditPart, ToolEntry } from '../lib/types';
 
 function Diff({ edits }: { edits: EditPart[] }) {
@@ -27,8 +29,32 @@ function Diff({ edits }: { edits: EditPart[] }) {
   );
 }
 
-export default function Inspector({ entry, onClose }: { entry: ToolEntry | null; onClose: () => void }) {
+// a helper drawer, not a takeover: cap at ~2/3 of the viewport (960px on wide screens)
+const clampInspW = (w: number) => Math.max(340, Math.min(Math.min(Math.round(window.innerWidth * 0.65), 960), w));
+
+export default function Inspector({
+  entry,
+  agentType,
+  onClose,
+}: {
+  entry: ToolEntry | null;
+  agentType?: string;
+  onClose: () => void;
+}) {
   const { copyText } = useToast();
+  const wRef = useRef(0);
+
+  // on wide screens the detail pane makes room for the drawer instead of sitting under it
+  useEffect(() => {
+    document.body.classList.toggle('inspopen', !!entry);
+    return () => document.body.classList.remove('inspopen');
+  }, [entry]);
+
+  // restore the last dragged width (mirrors the rail's persisted --railw)
+  useEffect(() => {
+    const saved = +(localStorage.getItem('inspw') || 0);
+    if (saved) document.documentElement.style.setProperty('--inspw', clampInspW(saved) + 'px');
+  }, []);
 
   const onResizeDown = (e: React.PointerEvent) => {
     e.preventDefault();
@@ -37,33 +63,47 @@ export default function Inspector({ entry, onClose }: { entry: ToolEntry | null;
     grip.classList.add('drag');
     document.body.classList.add('dragging');
     const move = (ev: PointerEvent) => {
-      const w = Math.max(340, Math.min(window.innerWidth - 80, window.innerWidth - ev.clientX));
-      document.documentElement.style.setProperty('--inspw', w + 'px');
+      wRef.current = clampInspW(window.innerWidth - ev.clientX);
+      document.documentElement.style.setProperty('--inspw', wRef.current + 'px');
     };
     const up = () => {
       grip.removeEventListener('pointermove', move);
       grip.removeEventListener('pointerup', up);
       grip.classList.remove('drag');
       document.body.classList.remove('dragging');
+      if (wRef.current) localStorage.setItem('inspw', String(wRef.current));
     };
     grip.addEventListener('pointermove', move);
     grip.addEventListener('pointerup', up);
   };
 
+  const onResizeReset = () => {
+    wRef.current = 0;
+    document.documentElement.style.removeProperty('--inspw');
+    localStorage.removeItem('inspw');
+  };
+
   const en = entry;
-  const who = en?.agent ? `${legendFor(en.agent).e} ${legendFor(en.agent).f}` : 'Main agent';
-  const status = en ? (en.dur === null ? 'running…' : (en.ok === false ? 'failed · ' : '') + fmtDur(en.dur)) : '';
+  const who = en?.agent ? agentDisplay(agentType, en.agent) : 'Main agent';
+  // sub-second durations read as "<1s" here (the drawer is where exact timing is looked for)
+  const dur = en && en.dur !== null ? (en.dur < 1000 ? '<1s' : fmtDur(en.dur)) : '';
+  const status = en ? (en.dur === null ? 'running…' : (en.ok === false ? 'failed · ' : '') + dur) : '';
   const hasDiff = !!en?.edits?.length;
 
   return (
     <aside className={'inspector' + (en ? ' open' : '')} aria-label="Tool call details">
-      <div className="insp-resize" title="Drag to resize" onPointerDown={onResizeDown}></div>
+      <div
+        className="insp-resize"
+        title="Drag to resize · double-click to reset"
+        onPointerDown={onResizeDown}
+        onDoubleClick={onResizeReset}
+      ></div>
       <div className="insp-head">
         <span className="insp-title">
           {en?.name}{' '}
           <span
             className={'pd' + (en?.ok === false ? ' bad' : '')}
-            style={{ color: 'var(--mut)', fontWeight: 400, fontSize: 11 }}
+            style={{ color: 'var(--mut)', fontWeight: 400, fontSize: 'var(--fs-xs)' }}
           >
             {status}
           </span>
@@ -89,7 +129,7 @@ export default function Inspector({ entry, onClose }: { entry: ToolEntry | null;
                   <div className="ilabel">
                     Input
                     <button className="icopy" onClick={() => copyText(en.inStr, 'Input')}>
-                      ⧉ copy
+                      <Icon name="copy" size={10} /> copy
                     </button>
                   </div>
                   <pre className="ibox">{en.inStr}</pre>
@@ -101,7 +141,7 @@ export default function Inspector({ entry, onClose }: { entry: ToolEntry | null;
                 <div className="ilabel">
                   Output
                   <button className="icopy" onClick={() => copyText(en.outStr, 'Output')}>
-                    ⧉ copy
+                    <Icon name="copy" size={10} /> copy
                   </button>
                 </div>
                 <pre className={'ibox' + (en.ok === false ? ' bad' : '')}>{en.outStr}</pre>

@@ -1,0 +1,131 @@
+/* ---- ⌘K command palette ---- */
+.cmdk-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--scrim);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12vh var(--sp-4) var(--sp-4);
+  animation: cmdkfade 0.12s ease both;
+}
+@keyframes cmdkfade {
+  from {
+    opacity: 0;
+  }
+}
+.cmdk {
+  width: min(560px, 100%);
+  max-height: 62vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-lg);
+  box-shadow: 0 1px 0 var(--hi) inset, 0 30px 80px -20px rgb(var(--shadow-rgb) / calc(0.7 * var(--shadow-k)));
+  animation: setpop 0.16s ease both;
+}
+.cmdk-input {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2_5);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-md);
+}
+.cmdk-input input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  font: inherit;
+}
+.cmdk-input input::placeholder {
+  color: var(--mut);
+}
+.cmdk-list {
+  overflow-y: auto;
+  padding: var(--sp-1_5);
+}
+.cmdk-sec {
+  padding: var(--sp-2) var(--sp-2_5) var(--sp-1);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut);
+}
+.cmdk-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2_5);
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-2) var(--sp-2_5);
+  border-radius: var(--r-md);
+  font-size: var(--fs-base);
+  color: var(--ink-2);
+}
+.cmdk-item.active {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.cmdk-item .ck-ico {
+  flex: none;
+  width: 20px;
+  text-align: center;
+}
+.cmdk-item .ck-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mut);
+}
+.cmdk-item .ck-dot.working {
+  background: var(--status-working);
+}
+.cmdk-item .ck-dot.waiting {
+  background: var(--status-waiting);
+}
+.cmdk-item .ck-lbl {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmdk-item .ck-sub {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--mut);
+}
+.cmdk-empty {
+  padding: var(--sp-5) var(--sp-3);
+  text-align: center;
+  font-size: var(--fs-base);
+  color: var(--mut);
+}
+.cmdk-foot {
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-xs);
+  color: var(--mut);
+}
+.cmdk-foot kbd {
+  font: inherit;
+  padding: 0 var(--sp-1);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--panel-2);
+}

@@ -3,7 +3,7 @@
 
 import { normalizeEventName } from './constants';
 import { clipVal, extractEdits, isToolFailure, toolDetail, fmtDur } from './format';
-import { legendFor } from './legends';
+import { agentDisplay } from './legends';
 import type { HookEvent, Session, TimelineEntry, ToolEntry, ToolInfo } from './types';
 
 export type Effect =
@@ -41,6 +41,7 @@ function newSession(id: string, e: HookEvent): Session {
     effort: '',
     lastResult: '',
     lastResultAt: 0,
+    waitingSince: 0,
     subagents: [],
     timeline: [],
     pending: {},
@@ -70,10 +71,29 @@ export function settlePending(s: Session, t: number, scope?: string): void {
     const en = s.pending[k];
     const match = scope === '*' || (scope === undefined ? !en.agent : en.agent === scope);
     if (!match) continue;
-    en.dur = Math.max(0, t - en.t);
-    en.ok = true;
-    delete s.pending[k];
+    finishTool(s, en, { dur: Math.max(0, t - en.t), ok: true });
   }
+}
+
+// `pending` and `timeline` both hold the tool entry, but under Immer (one produce
+// per live event) they stop being the same object once a later event touches
+// either — so a finish must be written to both, or the timeline row stays
+// "running" forever.
+function finishTool(s: Session, en: ToolEntry, patch: Pick<ToolEntry, 'dur' | 'ok'> & { outStr?: string }): void {
+  Object.assign(en, patch);
+  for (let i = s.timeline.length - 1; i >= 0; i--) {
+    const row = s.timeline[i];
+    if (row.kind === 'tool' && row.id === en.id) {
+      if (row !== en) Object.assign(row, patch);
+      break;
+    }
+  }
+  delete s.pending[en.id];
+}
+
+function clearWaiting(s: Session): void {
+  s.waitMsg = null;
+  s.waitingSince = 0;
 }
 
 function pushTl(s: Session, entry: TimelineEntry): void {
@@ -162,14 +182,14 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
   switch (e.hook_event_name) {
     case 'SessionStart':
       s.status = 'working';
-      s.waitMsg = null;
+      clearWaiting(s);
       s.workStart = e.received_at;
       pushTl(s, { kind: 'sys', t: e.received_at, text: 'Session started' });
       break;
 
     case 'UserPromptSubmit':
       s.status = 'working';
-      s.waitMsg = null;
+      clearWaiting(s);
       s.workStart = e.received_at;
       s.prompt = (e.prompt || '').slice(0, 2000);
       s.promptId = e.prompt_id || null;
@@ -179,7 +199,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
 
     case 'PreToolUse': {
       s.status = 'working';
-      s.waitMsg = null;
+      clearWaiting(s);
       s.toolCount++;
       const tool: ToolInfo = { name: e.tool_name || '?', detail: toolDetail(e.tool_input) };
       const entry: ToolEntry = {
@@ -217,7 +237,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
     case 'PostToolUseFailure': {
       if (s.status === 'waiting') {
         s.status = 'working';
-        s.waitMsg = null;
+        clearWaiting(s);
       }
       const failed = isToolFailure(e);
       let entry: ToolEntry | undefined = e.tool_use_id ? s.pending[e.tool_use_id] : undefined;
@@ -226,13 +246,14 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
           .reverse()
           .find((t) => t.name === e.tool_name && !!t.agent === !!aid);
       if (entry) {
-        entry.dur =
-          typeof e.duration_ms === 'number' && e.duration_ms >= 0
-            ? e.duration_ms
-            : Math.max(0, e.received_at - entry.t);
-        entry.ok = !failed;
-        entry.outStr = clipVal(e.tool_response);
-        delete s.pending[entry.id];
+        finishTool(s, entry, {
+          dur:
+            typeof e.duration_ms === 'number' && e.duration_ms >= 0
+              ? e.duration_ms
+              : Math.max(0, e.received_at - entry.t),
+          ok: !failed,
+          outStr: clipVal(e.tool_response),
+        });
       }
       if (failed) s.failCount++;
       if (aid) {
@@ -248,6 +269,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
     case 'Notification': {
       const msg = e.message || e.notification || '';
       if (/permission|waiting for your (input|response)|approve/i.test(msg)) {
+        if (s.status !== 'waiting') s.waitingSince = e.received_at;
         s.status = 'waiting';
         s.waitMsg = msg.slice(0, 240);
         pushTl(s, { kind: 'note', t: e.received_at, text: msg.slice(0, 160) });
@@ -270,7 +292,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
         if (type !== 'subagent') sa.type = type;
         sa.lastSeen = e.received_at;
       }
-      pushTl(s, { kind: 'agent', t: e.received_at, text: legendFor(id).f + ' started', agent: id });
+      pushTl(s, { kind: 'agent', t: e.received_at, text: agentDisplay(sa.type, id) + ' started', agent: id });
       break;
     }
 
@@ -284,7 +306,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
         pushTl(s, {
           kind: 'agent',
           t: e.received_at,
-          text: legendFor(sa.id).f + ' finished · ' + fmtDur((sa.stopped || 0) - sa.started),
+          text: agentDisplay(sa.type, sa.id) + ' finished · ' + fmtDur((sa.stopped || 0) - sa.started),
           agent: sa.id,
           result: sa.result || '',
         });
@@ -296,7 +318,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
     case 'Stop': {
       const workMs = s.workStart ? e.received_at - s.workStart : 0;
       s.status = 'idle';
-      s.waitMsg = null;
+      clearWaiting(s);
       s.currentTool = null;
       s.doneAt = e.received_at;
       if (Array.isArray(e.background_tasks)) reconcileSubs(s, e);
@@ -336,7 +358,7 @@ export function applyEvent(state: SessionsState, e: HookEvent, live = true): voi
 
     case 'SessionEnd':
       s.status = 'ended';
-      s.waitMsg = null;
+      clearWaiting(s);
       s.currentTool = null;
       s.subagents.forEach((x) => {
         x.running = false;
