@@ -21,11 +21,20 @@ export default defineConfig({
       '/session': { target: API, changeOrigin: true },
       '/search': { target: API, changeOrigin: true },
       '/setup': { target: API, changeOrigin: true },
+      '/terminal': { target: API, changeOrigin: true },
       '/focus': { target: API, changeOrigin: true },
+      '/analysis': { target: API, changeOrigin: true },
     },
   },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // goey-toast pulls in framer-motion (~⅓ of the bundle): its own file, loaded in parallel.
+        // (Not a lazy import — toasts fired before a lazily mounted toaster were dropped.)
+        manualChunks: { toast: ['goey-toast'] },
+      },
+    },
   },
 });

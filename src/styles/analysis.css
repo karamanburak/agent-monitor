@@ -1,0 +1,55 @@
+/* ---------- session analysis (rule-based findings + optional AI explanation) ---------- */
+.danalysis { flex: none; margin-top: var(--sp-4); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); }
+.danalysis .ahead { width: 100%; display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-4);
+                    font-size: var(--fs-sm); color: var(--ink-2); text-align: left; }
+.danalysis .ahead:hover { color: var(--ink); }
+.danalysis .atitle { font-weight: 600; }
+.danalysis .ahealth { font-weight: 700; font-variant-numeric: tabular-nums; border-radius: var(--r-pill); padding: 0 var(--sp-2);
+                      border: 1px solid currentColor; font-size: var(--fs-xs); }
+.ahealth.good { color: var(--ok); }
+.ahealth.fair { color: var(--warn); }
+.ahealth.poor { color: var(--err); }
+.danalysis .acount { color: var(--mut); }
+.danalysis .achev { margin-left: auto; color: var(--mut); }
+.danalysis .abody { border-top: 1px solid var(--line); padding: var(--sp-3) var(--sp-4) var(--sp-4); max-height: 46vh; overflow: auto;
+                    display: flex; flex-direction: column; gap: var(--sp-4); }
+
+.afinds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2_5); }
+.afind { border-left: 3px solid var(--mut); padding: var(--sp-1) 0 var(--sp-1) var(--sp-3); }
+.afind.warn { border-left-color: var(--warn); }
+.afind.high { border-left-color: var(--err); }
+.afhead { display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-base); color: var(--ink); }
+.afsev { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.06em; color: var(--mut); flex: none; }
+.afind.warn .afsev { color: var(--warn); }
+.afind.high .afsev { color: var(--err); }
+.afid { margin-left: auto; font-size: var(--fs-micro); color: var(--mut); flex: none; }
+.afdetail { margin: var(--sp-1) 0 0; font-size: var(--fs-sm); color: var(--ink-2); }
+.afev { list-style: none; margin: var(--sp-1) 0 0; padding: 0; font-size: var(--fs-xs); color: var(--mut); }
+.afev li { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.afsugg { margin-top: var(--sp-1_5); display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-xs); color: var(--ink-2);
+          background: var(--panel-2); border-radius: var(--r-sm); padding: var(--sp-1_5) var(--sp-2); }
+.afsugg > span, .afsugg > code { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.aempty { margin: 0; font-size: var(--fs-sm); color: var(--mut); }
+
+.aai { border-top: 1px dashed var(--line-2); padding-top: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2_5); font-size: var(--fs-sm); }
+.aaihead { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.aprov { margin-left: auto; display: inline-flex; align-items: center; gap: var(--sp-2); }
+.aprov select { font-size: var(--fs-xs); background: var(--panel-2); color: var(--ink-2); border: 1px solid var(--line-2);
+                border-radius: var(--r-sm); padding: var(--sp-0_5) var(--sp-1_5); }
+.abadge { font-size: var(--fs-xs); color: var(--mut); }
+.abadge.local { color: var(--ok); }
+.abadge.cloud { color: var(--acc); }
+.abtn { align-self: flex-start; font-size: var(--fs-sm); font-weight: 600; color: var(--on-accent); background: var(--acc);
+        border-radius: var(--r-sm); padding: var(--sp-1_5) var(--sp-3); }
+.abtn:disabled { opacity: 0.5; cursor: default; }
+.aconsent { display: flex; flex-direction: column; gap: var(--sp-2); background: var(--panel-2); border-radius: var(--r-sm); padding: var(--sp-3); }
+.aconsent p, .aerr, .asummary, .ameta { margin: 0; }
+.aerr { color: var(--err-ink); }
+.areport { display: flex; flex-direction: column; gap: var(--sp-2); color: var(--ink-2); }
+.areport h4 { margin: var(--sp-1) 0 0; font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.06em; color: var(--mut); }
+.areport ul { margin: 0; padding-left: var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-1_5); }
+.asummary { color: var(--ink); }
+.akind { font-size: var(--fs-micro); text-transform: uppercase; letter-spacing: 0.05em; color: var(--prompt);
+         border: 1px solid currentColor; border-radius: var(--r-pill); padding: 0 var(--sp-1_5); }
+.acite { font-size: var(--fs-micro); color: var(--mut); }
+.ameta { font-size: var(--fs-xs); color: var(--mut); }

@@ -182,3 +182,17 @@ section h2 .count { color: var(--ink-2); }
 .dsubs.compact h2 { margin: 0; }
 .dsubs.compact .lane { display: none; }
 .dsubs.compact .donechips { margin-top: 0; }
+
+/* ---- terminal actions (macOS): jump to the session's tab / resume / open here ---- */
+.termacts { flex: none; display: inline-flex; align-items: center; gap: var(--sp-1_5); }
+.tact { display: inline-flex; align-items: center; gap: var(--sp-1_5); font-size: var(--fs-sm); color: var(--ink-2);
+        border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: var(--sp-1) var(--sp-2_5); background: var(--panel); }
+.tact:hover { color: var(--ink); border-color: var(--mut); background: var(--panel-2); }
+.tact.primary { color: var(--acc); border-color: color-mix(in srgb, var(--acc) 45%, var(--line-2)); }
+.tact.primary:hover { background: color-mix(in srgb, var(--acc) 12%, transparent); border-color: var(--acc); }
+.dbanner .bterm { flex: none; display: inline-flex; align-items: center; gap: var(--sp-1_5); font-size: var(--fs-sm); font-weight: 600;
+                  color: var(--bg); background: var(--status-waiting); border-radius: var(--r-sm); padding: var(--sp-1) var(--sp-2_5); }
+.dbanner .bterm:hover { filter: brightness(1.08); }
+.histhead h3 .termacts { margin-left: auto; }
+/* while waiting, the banner carries the jump — one "Go to terminal", not two */
+.detail-view.waiting .dhead .tact.primary { display: none; }

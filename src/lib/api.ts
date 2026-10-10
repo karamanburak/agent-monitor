@@ -1,7 +1,11 @@
 import type {
+  AnalystProviders,
+  AnalystSettings,
+  ExplainResponse,
   HistorySession,
   HookEvent,
   SearchSession,
+  SessionAnalysis,
   SessionUsageEntry,
   SetupInfo,
   StatsDay,
@@ -34,4 +38,32 @@ export async function searchHistory(q: string): Promise<{ sessions: SearchSessio
 
 export async function getSetup(): Promise<SetupInfo> {
   return (await fetch('/setup')).json();
+}
+
+export async function getAnalysis(id: string): Promise<SessionAnalysis> {
+  return (await fetch('/analysis?id=' + encodeURIComponent(id))).json();
+}
+
+export async function getAnalystProviders(refresh = false): Promise<AnalystProviders> {
+  return (await fetch('/analysis/providers' + (refresh ? '?refresh=1' : ''))).json();
+}
+
+export async function saveAnalystSettings(
+  patch: Partial<AnalystSettings>,
+): Promise<{ ok: boolean; settings: AnalystSettings }> {
+  const r = await fetch('/analysis/settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  });
+  return r.json();
+}
+
+export async function explainSession(id: string): Promise<ExplainResponse> {
+  const r = await fetch('/analysis/explain', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  });
+  return r.json();
 }

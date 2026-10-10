@@ -9,6 +9,7 @@ import { useToast } from './Toast';
 import Icon from './Icon';
 import Overlay from './Overlay';
 import Timeline from './Timeline';
+import TerminalActions from './TerminalActions';
 import type { HistorySession, HookEvent, SearchSession, Session } from '../lib/types';
 
 // snippet() marks matches with \x01…\x02; keep the control chars out of regex literals
@@ -249,11 +250,15 @@ export default function HistoryOverlay({
 
 function PastSession({ s, toast }: { s: Session; toast: (m: string, k?: 'ok' | 'err') => void }) {
   const mdl = shortModel(s.model);
+  // a session the dashboard still sees as live gets "Go to terminal", not "Resume"
+  const liveNow = useAppSelector((st) => st.sessions.sessions[s.id]);
+  const live = !!liveNow && displayStatus(liveNow) !== 'ended';
   return (
     <>
       <div className="histhead">
         <h3>
           {basename(s.cwd)}
+          <TerminalActions s={s} ended={!live} />
           <button
             className="fitbtn"
             title="Download this session's timeline as a Markdown file"

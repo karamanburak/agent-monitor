@@ -1,6 +1,14 @@
 // The hook event shape is intentionally loose — clients emit varying fields that applyEvent normalizes.
 export type StatusKind = 'working' | 'waiting' | 'idle' | 'ended';
 
+export interface TermInfo {
+  tty?: string;
+  program?: string;
+  app?: string;
+  tmux?: string;
+  pane?: string;
+}
+
 export interface HookEvent {
   hook_event_name?: string;
   session_id?: string;
@@ -37,6 +45,8 @@ export interface HookEvent {
   cache_write_tokens?: number;
   events?: HookEvent[];
   raw?: string;
+  // added by hook-forward.sh: where the session's terminal lives (for "Go to terminal")
+  term?: TermInfo;
   [k: string]: unknown;
 }
 
@@ -149,6 +159,8 @@ export interface Session {
   model: string;
   permMode: string;
   effort: string;
+  // terminal the session runs in, e.g. "Ghostty · tmux" ('' = not reported by the hook)
+  termLabel?: string;
   lastResult: string;
   lastResultAt: number;
   waitMsg?: string | null;
@@ -233,3 +245,54 @@ export interface HistorySession {
   ended: boolean;
   result: string;
 }
+
+// ---- Session Analyst (server/analysis) ----
+export type FindingSeverity = 'info' | 'warn' | 'high';
+
+export interface Finding {
+  id: string;
+  detector: string;
+  severity: FindingSeverity;
+  title: string;
+  detail: string;
+  count: number;
+  evidence: { at: number; tool?: string; text: string }[];
+  suggestion?: string;
+}
+
+export interface SessionAnalysis {
+  sessionId: string;
+  eventCount: number;
+  health: number;
+  findings: Finding[];
+}
+
+export type AnalystProviderId = 'claude-code' | 'claude-api' | 'ollama';
+
+export interface AnalystSettings {
+  provider: 'auto' | 'off' | AnalystProviderId;
+  cloudConsent: boolean;
+  models: Partial<Record<AnalystProviderId, string>>;
+}
+
+export interface AnalystProviders {
+  settings: AnalystSettings;
+  picked: AnalystProviderId | null;
+  providers: { id: AnalystProviderId; label: string; local: boolean; ok: boolean; detail: string; models?: string[] }[];
+}
+
+export interface AnalystReport {
+  summary: string;
+  rootCauses: { text: string; findingIds: string[] }[];
+  recommendations: {
+    kind: 'claude_md' | 'permission' | 'skill' | 'workflow';
+    text: string;
+    snippet?: string;
+    findingIds: string[];
+  }[];
+  dropped: number;
+}
+
+export type ExplainResponse =
+  | { ok: true; provider: AnalystProviderId; local: boolean; model: string; ms: number; report: AnalystReport }
+  | { ok: false; reason: 'off' | 'unavailable' | 'consent' | 'failed' | 'bad-id'; message?: string };

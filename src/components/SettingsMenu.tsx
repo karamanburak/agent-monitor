@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { toggleRadio, toggleTokens } from '../store/uiSlice';
+import { setTermApp, toggleRadio, toggleTokens } from '../store/uiSlice';
+import { useTerminal } from '../hooks/useTerminal';
 import { useTheme } from '../hooks/useTheme';
 import Icon from './Icon';
 import type { useAlerts } from '../hooks/useAlerts';
@@ -19,6 +20,10 @@ export default function SettingsMenu({
   const showRadio = useAppSelector((s) => s.ui.showRadio);
   const showTokens = useAppSelector((s) => s.ui.showTokens);
   const [open, setOpen] = useState(false);
+  const term = useTerminal();
+  // "auto" first, then each installed terminal app; clicking cycles through them
+  const termChoices = ['auto', ...term.apps.map((a) => a.id)];
+  const termName = (id: string) => (id === 'auto' ? 'Auto' : term.apps.find((a) => a.id === id)?.name || 'Auto');
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -116,6 +121,23 @@ export default function SettingsMenu({
             <span className="si-lbl">Radio player</span>
             <Toggle on={showRadio} />
           </button>
+          {term.supported && term.apps.length > 0 && (
+            <button
+              className="setitem"
+              role="menuitem"
+              title="App for Open terminal here / Resume. Auto = the terminal the session itself ran in"
+              onClick={() => {
+                const i = termChoices.indexOf(term.app);
+                dispatch(setTermApp(termChoices[(i + 1) % termChoices.length]));
+              }}
+            >
+              <span className="si-ico" aria-hidden="true">
+                <Icon name="square-terminal" />
+              </span>
+              <span className="si-lbl">New terminal app</span>
+              <span className="si-val">{termName(term.app)}</span>
+            </button>
+          )}
           <button
             className="setitem"
             role="menuitem"

@@ -151,6 +151,41 @@ export function eventsForSession(id: string): Event[] {
   return parseRows(rows);
 }
 
+// Where a session ran: its project folder, the agent it came from and the terminal
+// details hook-forward.sh attaches (tty / tmux pane / app) — for "Go to terminal".
+export interface SessionPlace {
+  cwd: string;
+  source: string;
+  term: Record<string, string> | null;
+}
+
+export function sessionPlace(id: string): SessionPlace | null {
+  const c = db
+    .query(
+      "SELECT cwd, payload FROM events WHERE session_id = ? AND cwd IS NOT NULL AND cwd <> '' ORDER BY id DESC LIMIT 1",
+    )
+    .get(id) as { cwd: string; payload: string } | null;
+  if (!c) return null;
+  const t = db
+    .query(
+      `SELECT payload FROM events WHERE session_id = ?
+         AND hook_event IN ('SessionStart', 'UserPromptSubmit', 'Notification') AND payload LIKE '%"term":{%'
+       ORDER BY id DESC LIMIT 1`,
+    )
+    .get(id) as { payload: string } | null;
+  let source = 'claude';
+  let term: Record<string, string> | null = null;
+  try {
+    source = String(JSON.parse(c.payload).source || 'claude');
+  } catch {}
+  try {
+    const raw = t ? JSON.parse(t.payload).term : null;
+    if (raw && typeof raw === 'object')
+      term = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, String(v ?? '')]));
+  } catch {}
+  return { cwd: c.cwd, source, term };
+}
+
 export interface SearchHit {
   session_id: string;
   received_at: number;

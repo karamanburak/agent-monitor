@@ -1,11 +1,5 @@
-import { lazy, Suspense, useMemo, type ReactNode } from 'react';
-
-// goey-toast pulls in framer-motion (~⅓ of the bundle), and toasts only ever appear after a
-// user action — so the library lives in its own chunk, fetched right after first paint.
-const loadLib = () => import('goey-toast');
-const LazyToaster = lazy(() =>
-  loadLib().then((m) => ({ default: () => <m.GooeyToaster position="bottom-center" /> })),
-);
+import { useMemo, type ReactNode } from 'react';
+import { GooeyToaster, gooeyToast } from 'goey-toast';
 
 type ToastKind = '' | 'ok' | 'err';
 interface ToastApi {
@@ -13,36 +7,30 @@ interface ToastApi {
   copyText: (text: string, label?: string) => Promise<void>;
 }
 
+// goey-toast is split into its own chunk in vite.config.ts; it is imported eagerly on purpose
 export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
-      <Suspense fallback={null}>
-        <LazyToaster />
-      </Suspense>
+      <GooeyToaster position="bottom-center" />
     </>
   );
 }
-
-const show = (msg: string, kind: ToastKind = '') =>
-  loadLib().then(({ gooeyToast }) => {
-    if (kind === 'ok') gooeyToast.success(msg);
-    else if (kind === 'err') gooeyToast.error(msg);
-    else gooeyToast(msg);
-  });
 
 export function useToast(): ToastApi {
   return useMemo<ToastApi>(
     () => ({
       toast(msg, kind = '') {
-        void show(msg, kind);
+        if (kind === 'ok') gooeyToast.success(msg);
+        else if (kind === 'err') gooeyToast.error(msg);
+        else gooeyToast(msg);
       },
       async copyText(text, label) {
         try {
           await navigator.clipboard.writeText(text);
-          void show((label || 'Copied') + ' to clipboard', 'ok');
+          gooeyToast.success((label || 'Copied') + ' to clipboard');
         } catch {
-          void show('Copy failed — select and ⌘C', 'err');
+          gooeyToast.error('Copy failed — select and ⌘C');
         }
       },
     }),

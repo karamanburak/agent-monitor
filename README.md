@@ -53,6 +53,7 @@ chmod +x /ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh
     "SubagentStop":     [{ "hooks": [{ "type": "command", "command": "/ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh" }] }],
     "PreToolUse":       [{ "hooks": [{ "type": "command", "command": "/ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh" }] }],
     "PostToolUse":      [{ "hooks": [{ "type": "command", "command": "/ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh" }] }],
+    "PostToolUseFailure": [{ "hooks": [{ "type": "command", "command": "/ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh" }] }],
     "Notification":     [{ "hooks": [{ "type": "command", "command": "/ABSOLUTE/PATH/TO/claude-agent-monitor/hook-forward.sh" }] }]
   }
 }
@@ -97,11 +98,12 @@ src/
   App.tsx               layout, hook wiring, overlays, inspector
   store/                Redux Toolkit: sessions / ui / usage slices + typed hooks
   lib/                  types, ingest (applyEvent port), format utils, legends, turns, markdown, api,
-                        shortcuts (the one keyboard-shortcut registry), toolIcon
+                        shortcuts (the one keyboard-shortcut registry), toolIcon, terminal
   hooks/                useEventStream, useTick, useUsage, useAlerts, useTheme, useNow,
-                        useHotkeys, useUrlState
+                        useHotkeys, useUrlState, useTerminal
   components/           TopBar, Rail, Radio, TokenFooter, Detail, AgentLane,
-                        Timeline, Trace, Inspector, Overlay, StatsOverlay, HistoryOverlay, Toast
+                        Timeline, Trace, Inspector, Overlay, StatsOverlay, HistoryOverlay, Toast,
+                        TerminalActions, Analysis
   styles/               index.css (import order) · tokens.css (all colors & scales,
                         dark + light) · base.css (reset, app grid) · one file per
                         area: topbar, rail, detail, timeline, trace, inspector,
@@ -113,10 +115,13 @@ server/
   server.ts             entry: http server
   config.ts · types.ts  constants + shared types
   routes.ts             method+path → controller
-  helpers/              truncate, pricing, http utils
+  helpers/              truncate, pricing, http utils, terminal (macOS jump / open / resume)
   models/               db (SQLite), eventStore, usageStore, historyStore (state + logic)
   validations/          request body limits + parsers
-  controllers/          events, usage, history, focus handlers
+  controllers/          events, usage, history, setup, terminal, analysis handlers
+  analysis/             Session Analyst: detectors/ (pure rules), analyze, redact,
+                        prompt + validate (LLM contract), explain, providers/ (Claude Code,
+                        Claude API, Ollama)
 ```
 
 ## Features
@@ -160,6 +165,36 @@ on the right.
   tool calls, failures (click to filter), subagents, tokens and cost. Plus a
   tool-call inspector drawer with real diffs (the pane makes room for it) and
   Markdown export.
+- **Session analysis** — a collapsible panel in the detail pane scores the
+  session (health 0–100) and lists friction found by rule-based detectors:
+  loops, edits that undo earlier edits, retry storms, re-reads of unchanged
+  files, permission prompts (with a ready-to-paste allow rule, never for risky
+  commands), time blocked on permissions, and your corrections (EN / DE / TR).
+  **Explain** sends the findings to an LLM for root causes and next steps;
+  every claim must cite a finding, uncited ones are dropped. See
+  [Session Analyst](#session-analyst).
+- **Go to terminal** (`T`, macOS) — one click on the needs-you banner, the
+  session header or a Grid card brings the exact terminal tab Claude is running
+  in to the front, so you can answer it straight away. `hook-forward.sh`
+  records where each session runs (its tty, tmux pane and terminal app); the
+  server uses that to:
+  - **tmux**: switch the attached client to the session, window and pane, then
+    raise the terminal window showing it;
+  - **Terminal.app / iTerm2**: select the tab by tty via AppleScript;
+  - **Ghostty** (1.3+): focus the right tab (Ghostty can't look terminals up by
+    tty, so the tab's title is briefly set to a unique marker, found, and
+    restored);
+  - **Warp, VS Code / Cursor**: bring the app (editors: the project window)
+    forward; they don't expose tab selection.
+
+  Finished sessions get **Resume** (`claude --resume <id>` in a new tab, in the
+  project folder) and **Open terminal here**; History offers both too. Settings
+  → *New terminal app* picks Terminal / Ghostty / Warp / iTerm, or *Auto* (the
+  app the session ran in). Warp can't be handed a command, so Resume copies it
+  to the clipboard. The first use may trigger macOS's one-time Automation
+  prompt. The endpoint accepts only a session id (folder and terminal details
+  come from the recorded events), runs every command without a shell, and
+  rejects requests from any page other than the dashboard.
 - **⏳ Needs you, system-wide** — tab title + favicon flip; enable **Alerts** for
   OS notifications and **Sound** for a chime when a session needs you or finishes
   a long task.
@@ -181,10 +216,43 @@ on the right.
   `Shift+R` to stop & hide it entirely, or toggle it from Settings / the
   command palette.
 
+## Session Analyst
+
+Rules first, LLM second. The detectors in `server/analysis/detectors/` are pure
+functions over a session's events — fast (~600 ms for 387 sessions), testable,
+and they always work offline. The optional LLM layer only interprets their
+findings; it never sees raw events.
+
+**Providers** — picked automatically, or fixed in the panel:
+
+| Order | Available when | Provider | Data |
+|---|---|---|---|
+| 1 | the `claude` CLI is installed | Claude Code (`claude -p`, your login) | ☁️ Anthropic |
+| 2 | `ANTHROPIC_API_KEY` is set | Claude API (default model `claude-opus-5-5`) | ☁️ Anthropic |
+| 3 | Ollama runs on `127.0.0.1:11434` with a model | Ollama (first installed model) | 🔒 stays here |
+| – | none of the above | detectors only | 🔒 stays here |
+
+- Cloud providers stay locked until you allow them once in the panel
+  (`cloudConsent` in `analyst-settings.json`, which is git-ignored).
+- What is sent: finding titles, counts, details and up to three short examples
+  each, plus a digest (project folder name, counts, first prompt, last result)
+  — all clipped and passed through `redact()` (API keys, tokens, JWTs, passwords,
+  emails, …). No source files, no transcripts.
+- `claude -p` runs with no tools, no saved session, from a temp folder, and with
+  `AGENT_MONITOR_SKIP=1` so `hook-forward.sh` does not record the analysis.
+- Pick a model per provider in `analyst-settings.json`, e.g.
+  `{"models": {"ollama": "qwen3:4b", "claude-api": "claude-haiku-5-5"}}`.
+- Register the `PostToolUseFailure` hook (see Setup) — without it failed tool
+  calls are not recorded and the retry-storm detector has little to work with.
+
+Endpoints: `GET /analysis?id=` (findings), `GET /analysis/providers`,
+`POST /analysis/settings`, `POST /analysis/explain` (both POSTs dashboard-only).
+Design notes and roadmap: [docs/SESSION_ANALYST.md](docs/SESSION_ANALYST.md).
+
 ## Testing
 
 ```sh
-bun test          # unit tests for the ingestion reducer
+bun test          # unit tests: ingestion reducer + Session Analyst
 bun run test:e2e  # smoke test in headless Chrome (~4 s)
 bun run typecheck
 ```
@@ -202,7 +270,7 @@ Stats tabs.
 ## Monitored events
 
 SessionStart · SessionEnd · UserPromptSubmit · Stop · PreToolUse · PostToolUse ·
-SubagentStop · Notification
+PostToolUseFailure · SubagentStop · Notification
 
 ## Notes
 

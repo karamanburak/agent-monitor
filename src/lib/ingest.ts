@@ -4,6 +4,7 @@
 import { normalizeEventName } from './constants';
 import { clipVal, extractEdits, isToolFailure, toolDetail, fmtDur } from './format';
 import { agentDisplay } from './legends';
+import { terminalLabel } from './terminal';
 import type { HookEvent, Session, TimelineEntry, ToolEntry, ToolInfo } from './types';
 
 export type Effect =
@@ -60,6 +61,7 @@ function getSession(state: SessionsState, e: HookEvent): Session {
   if (typeof e.source === 'string' && e.source) s.source = e.source;
   if (e.model) s.model = e.model;
   if (e.permission_mode) s.permMode = e.permission_mode;
+  if (e.term && typeof e.term === 'object') s.termLabel = terminalLabel(e.term);
   if (e.effort) s.effort = typeof e.effort === 'object' && e.effort ? e.effort.level || '' : (e.effort as string);
   s.lastSeen = Math.max(s.lastSeen, e.received_at);
   return s;

@@ -7,6 +7,7 @@ import { useUsage } from './hooks/useUsage';
 import { useAlerts } from './hooks/useAlerts';
 import { useUrlState } from './hooks/useUrlState';
 import { useHotkeys } from './hooks/useHotkeys';
+import { useTerminal } from './hooks/useTerminal';
 import TopBar from './components/TopBar';
 import Rail from './components/Rail';
 import Detail from './components/Detail';
@@ -28,6 +29,7 @@ export default function App() {
   const dispatch = useAppDispatch();
   const refreshUsage = useUsage();
   const alerts = useAlerts();
+  const term = useTerminal();
 
   const selectedId = useAppSelector((s) => s.ui.selectedId);
   const session = useAppSelector((s) => (s.ui.selectedId ? s.sessions.sessions[s.ui.selectedId] : undefined));
@@ -82,6 +84,7 @@ export default function App() {
     palette: () => setPaletteOpen((v) => !v),
     grid: () => setGridOpen((v) => !v),
     notes: () => setNotesOpen((v) => !v),
+    terminal: term.supported && session ? () => term.primary(session) : undefined,
     help: () => setShortcutsOpen((v) => !v),
     radioNext: () => dispatch(cycleRadio()),
     radioPause: () => dispatch(toggleRadioPause()),

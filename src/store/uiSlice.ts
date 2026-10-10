@@ -19,6 +19,8 @@ export interface UiState {
   radioStation: string | null;
   // paused without stopping — P toggles this; unlike stopRadio it keeps the station loaded.
   radioPaused: boolean;
+  // app for new terminals ("Open terminal here" / "Resume"): 'auto' = the one the session ran in
+  termApp: string;
 }
 
 const savedView = ((): ViewMode => {
@@ -50,6 +52,13 @@ const initialState: UiState = {
   showTokens: savedFlag('showtokens', true),
   radioStation: null,
   radioPaused: false,
+  termApp: (() => {
+    try {
+      return localStorage.getItem('termapp') || 'auto';
+    } catch {
+      return 'auto';
+    }
+  })(),
 };
 
 const persistFlag = (key: string, on: boolean) => {
@@ -132,6 +141,14 @@ const uiSlice = createSlice({
       if (!state.radioStation) return;
       state.radioPaused = !state.radioPaused;
     },
+    setTermApp(state, action: PayloadAction<string>) {
+      state.termApp = action.payload;
+      try {
+        localStorage.setItem('termapp', action.payload);
+      } catch {
+        /* ignore */
+      }
+    },
   },
 });
 
@@ -150,5 +167,6 @@ export const {
   cycleRadio,
   stopRadio,
   toggleRadioPause,
+  setTermApp,
 } = uiSlice.actions;
 export default uiSlice.reducer;

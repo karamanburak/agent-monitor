@@ -211,6 +211,22 @@ async function main() {
     await select('billing-api');
     await waitFor(() => page.eval<boolean>(`!!document.querySelector('.detail-view.waiting .dbanner .bwait')`), 'banner');
   });
+  await check('terminal endpoint only obeys the dashboard; a session without terminal info explains why', async () => {
+    // never drives a real terminal: the seeded sessions carry no terminal details
+    const call = (headers: Record<string, string>, body: unknown) =>
+      fetch(`${API}/terminal`, { method: 'POST', headers, body: JSON.stringify(body) }).then((r) => r.status);
+    const json = { 'Content-Type': 'application/json' };
+    if ((await call({ ...json, Origin: 'https://evil.example' }, { id: 'e2e-billing', action: 'focus' })) !== 403)
+      throw new Error('foreign origin was not rejected');
+    if ((await call({ 'Content-Type': 'text/plain' }, { id: 'e2e-billing', action: 'focus' })) !== 403)
+      throw new Error('non-JSON body was not rejected');
+    if ((await call(json, { id: '../x; rm', action: 'focus' })) !== 400) throw new Error('bad id was not rejected');
+    const info = await fetch(`${API}/terminal`).then((r) => r.json());
+    if (!info.supported) return; // not macOS: the buttons are hidden, nothing more to check
+    await waitFor(() => page.eval<boolean>(`!!document.querySelector('.dbanner .bterm')`), 'banner terminal button');
+    await page.eval(`document.querySelector('.dbanner .bterm').click()`);
+    await waitFor(() => page.eval<boolean>(`/wasn't recorded/.test(document.body.textContent || '')`), 'no-term message');
+  });
   await check('timeline marks the failed tool and labels the subagent by type', async () => {
     await select('acme-web');
     await waitFor(() => page.eval<boolean>(`document.querySelectorAll('.trow.tool.failed').length === 1`), 'failed row');

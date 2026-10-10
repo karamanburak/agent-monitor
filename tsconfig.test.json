@@ -5,5 +5,5 @@
     "types": ["node", "bun"],
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo"
   },
-  "include": ["tests", "src"]
+  "include": ["tests", "src", "server"]
 }

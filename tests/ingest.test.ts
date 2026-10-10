@@ -63,6 +63,21 @@ describe('session lifecycle', () => {
     expect(sess.permMode).toBe('acceptEdits');
   });
 
+  test('terminal details from the hook become a readable label', () => {
+    const s = state();
+    applyEvent(
+      s,
+      ev('UserPromptSubmit', {
+        prompt: 'x',
+        term: { tty: '/dev/ttys007', program: 'tmux', app: 'com.mitchellh.ghostty', tmux: '/tmp/tmux-501/default,1,1', pane: '%4' },
+      }),
+      true,
+    );
+    expect(s.sessions[SID].termLabel).toBe('Ghostty · tmux');
+    applyEvent(s, ev('UserPromptSubmit', { prompt: 'y', term: { tty: '/dev/ttys003', program: 'Apple_Terminal' } }), true);
+    expect(s.sessions[SID].termLabel).toBe('Terminal');
+  });
+
   test('effort may arrive as an object {level} or a bare string', () => {
     const s = state();
     applyEvent(s, ev('SessionStart', { effort: { level: 'high' } }), true);

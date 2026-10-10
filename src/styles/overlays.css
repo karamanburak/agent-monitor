@@ -542,3 +542,42 @@ table.tooltbl .fbar { display: inline-block; height: 6px; border-radius: 3px; ba
 .scard-recent li.fail b {
   color: var(--status-failed);
 }
+
+/* grid card + its "go to terminal" button (a sibling, revealed on hover/focus; always on needs-you) */
+.scard-wrap {
+  position: relative;
+  display: flex;
+}
+.scard-wrap > .scard {
+  flex: 1;
+  min-width: 0;
+}
+.scard-term {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-2_5);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 24px;
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+.scard-wrap:hover .scard-term,
+.scard-term:focus-visible,
+.scard-wrap.waiting .scard-term {
+  opacity: 1;
+}
+.scard-term:hover {
+  color: var(--acc);
+  border-color: var(--acc);
+}
+.scard-wrap.waiting .scard-term {
+  color: var(--warn-ink);
+  border-color: color-mix(in srgb, var(--status-waiting) 60%, transparent);
+}

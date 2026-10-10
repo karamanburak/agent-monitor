@@ -35,6 +35,12 @@ export const SHORTCUTS: ShortcutDef[] = [
   },
   { id: 'notes', keys: ['N'], desc: 'Open the Notes scratchpad', combo: { key: 'n' } },
   {
+    id: 'terminal',
+    keys: ['T'],
+    desc: "Go to the selected session's terminal tab (finished sessions: open one in its folder) — macOS",
+    combo: { key: 't' },
+  },
+  {
     id: 'close',
     keys: ['Esc'],
     desc: 'Close the open overlay, inspector, or palette',

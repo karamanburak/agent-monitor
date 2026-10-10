@@ -21,6 +21,9 @@ import { downloadSessionMarkdown } from '../lib/markdown';
 import { useNow } from '../hooks/useNow';
 import { useToast } from './Toast';
 import AgentLane from './AgentLane';
+import Analysis from './Analysis';
+import TerminalActions from './TerminalActions';
+import { useTerminal } from '../hooks/useTerminal';
 import Timeline from './Timeline';
 import Trace from './Trace';
 import type { Session, ToolEntry } from '../lib/types';
@@ -106,6 +109,7 @@ export default function Detail({ session: s, onInspect }: { session: Session; on
   const usageBySession = useAppSelector((u) => u.usage.data?.bySession);
   const usageUpdated = useAppSelector((u) => u.usage.updated);
   const now = useNow();
+  const term = useTerminal();
 
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [fitKey, setFitKey] = useState(0);
@@ -206,12 +210,22 @@ export default function Detail({ session: s, onInspect }: { session: Session; on
             )}
           </div>
         </div>
+        <TerminalActions s={s} />
       </div>
 
       <div className="dbanner" role="alert" aria-live="assertive">
         <Icon name="hourglass" size={13} />
         <span className="bmsg">{s.waitMsg || 'Claude is waiting for your input'}</span>
         {s.waitingSince ? <span className="bwait">waiting {rel(s.waitingSince)}</span> : null}
+        {term.supported && (
+          <button
+            className="bterm"
+            title={`Jump to the ${s.termLabel || 'terminal'} tab where Claude is waiting (T)`}
+            onClick={() => term.run(s, 'focus')}
+          >
+            <Icon name="square-terminal" size={12} /> Go to terminal
+          </button>
+        )}
         <button
           className="bcopy"
           title="Copy this message"
@@ -237,6 +251,8 @@ export default function Detail({ session: s, onInspect }: { session: Session; on
           </div>
 
           <AgentLane subagents={s.subagents} expanded={expanded} onToggle={toggleAgent} />
+
+          <Analysis session={s} />
 
           <section className="dtl">
             <h2>

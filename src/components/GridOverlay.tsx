@@ -8,9 +8,32 @@ import { basename, clock, hashStr, rel } from '../lib/format';
 import { AVATAR_COLORS } from '../lib/constants';
 import { toolIcon } from '../lib/toolIcon';
 import { useNow } from '../hooks/useNow';
+import { useTerminal } from '../hooks/useTerminal';
 import Overlay from './Overlay';
 import Icon from './Icon';
 import type { Session, ToolEntry } from '../lib/types';
+
+// card + (macOS) a "go to terminal" button beside it — siblings, so no button nests in a button
+function SessionCardWrap({ s, onJump }: { s: Session; onJump: (id: string) => void }) {
+  const term = useTerminal();
+  const st = displayStatus(s);
+  return (
+    <div className={'scard-wrap ' + st} role="listitem">
+      <SessionCard s={s} onJump={onJump} />
+      {term.supported && st !== 'ended' && (
+        <button
+          type="button"
+          className="scard-term"
+          title={`Go to the ${s.termLabel || 'terminal'} tab of ${basename(s.cwd)}`}
+          aria-label={`Go to the terminal of ${basename(s.cwd)}`}
+          onClick={() => term.run(s, 'focus')}
+        >
+          <Icon name="square-terminal" size={13} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 function SessionCard({ s, onJump }: { s: Session; onJump: (id: string) => void }) {
   const st = displayStatus(s);
@@ -179,7 +202,7 @@ export default function GridOverlay({ open, onClose }: { open: boolean; onClose:
             live.length ? (
               <div className="scard-grid" role="list">
                 {live.map((s) => (
-                  <SessionCard key={s.id} s={s} onJump={jump} />
+                  <SessionCardWrap key={s.id} s={s} onJump={jump} />
                 ))}
               </div>
             ) : (

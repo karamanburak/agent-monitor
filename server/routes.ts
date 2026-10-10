@@ -1,7 +1,9 @@
 import type http from 'node:http';
+import { getAnalysis, getProviders, postExplain, postSettings } from './controllers/analysisController';
 import { postEvent, streamEvents } from './controllers/eventsController';
 import { getHistory, getSession, searchHistory } from './controllers/historyController';
 import { getSetup } from './controllers/setupController';
+import { getTerminal, postTerminal } from './controllers/terminalController';
 import { getSessionUsage, getStats, getUsage } from './controllers/usageController';
 
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse, u: URL) => void;
@@ -16,6 +18,12 @@ const ROUTES: Record<string, Handler> = {
   'GET /setup': getSetup,
   'GET /events': streamEvents,
   'POST /event': postEvent,
+  'GET /terminal': getTerminal,
+  'POST /terminal': postTerminal,
+  'GET /analysis': getAnalysis,
+  'GET /analysis/providers': getProviders,
+  'POST /analysis/settings': postSettings,
+  'POST /analysis/explain': postExplain,
 };
 
 export function route(req: http.IncomingMessage, res: http.ServerResponse): void {
