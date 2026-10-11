@@ -13,6 +13,7 @@ import { detectReadThrash } from '../server/analysis/detectors/readThrash';
 import { detectRetryStorms } from '../server/analysis/detectors/retryStorm';
 import { commandPrefix } from '../server/analysis/detectors/util';
 import { detectWaiting } from '../server/analysis/detectors/waiting';
+import { resultMessage } from '../server/analysis/providers/claudeCode';
 import { buildUserPrompt } from '../server/analysis/prompt';
 import { DEFAULT_SETTINGS, pickProvider, sanitizeSettings } from '../server/analysis/providers';
 import { redact } from '../server/analysis/redact';
@@ -321,4 +322,37 @@ describe('analyzeSession', () => {
     expect(a.health).toBe(100 - 10 - 3);
     expect(buildUserPrompt(a)).not.toContain('abc123secret');
   });
+});
+
+test('retry-storm takes the command from the PreToolUse when the failure omits tool_input', () => {
+  const evs: Event[] = [];
+  let t = 1_000;
+  for (let i = 0; i < 3; i++) {
+    evs.push({
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Bash',
+      tool_use_id: `f${i}`,
+      tool_input: { command: 'npm test -- orders' },
+      received_at: (t += 1000),
+    } as Event);
+    evs.push({
+      hook_event_name: 'PostToolUseFailure',
+      tool_name: 'Bash',
+      tool_use_id: `f${i}`,
+      error: 'exit 1',
+      received_at: (t += 1000),
+    } as Event);
+  }
+  const [f] = detectRetryStorms(evs);
+  expect(f.title).toBe('Bash: npm test failed 3×');
+  expect(f.suggestion).toContain('`npm test`');
+  expect(f.evidence[0].text).toContain('npm test -- orders');
+});
+
+test('claude -p output: a single result object or an array of messages', () => {
+  const result = { type: 'result', is_error: false, structured_output: { summary: 'x' } };
+  expect(resultMessage(result)).toBe(result);
+  expect(resultMessage([{ type: 'system', subtype: 'init' }, { type: 'assistant' }, result])).toBe(result);
+  expect(resultMessage([{ type: 'system' }])).toEqual({});
+  expect(resultMessage('nope')).toEqual({});
 });

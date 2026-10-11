@@ -22,9 +22,12 @@ export const detectRetryStorms: Detector = (events) => {
   // a call that got a result, or that hit a permission prompt (a "no" there is a choice, not a failure)
   const settled = new Set<string>();
   const pending = new Set<string>();
+  const inputs = new Map<string, unknown>(); // failure events do not always repeat the call's input
   for (const e of events) {
-    if (isPre(e) && e.tool_use_id) pending.add(e.tool_use_id);
-    else if ((isPost(e) || isFailure(e)) && e.tool_use_id) {
+    if (isPre(e) && e.tool_use_id) {
+      pending.add(e.tool_use_id);
+      inputs.set(e.tool_use_id, e.tool_input);
+    } else if ((isPost(e) || isFailure(e)) && e.tool_use_id) {
       settled.add(e.tool_use_id);
       pending.delete(e.tool_use_id);
     } else if (isNotification(e) && e.notification_type === 'permission_prompt') {
@@ -41,7 +44,11 @@ export const detectRetryStorms: Detector = (events) => {
     list.push({ at: at(e), tool: e.tool_name, text: clip(text, 140) });
     groups.set(key, list);
   };
-  for (const e of events) {
+  for (const raw of events) {
+    const e =
+      isFailure(raw) && raw.tool_input == null && raw.tool_use_id
+        ? { ...raw, tool_input: inputs.get(raw.tool_use_id) }
+        : raw;
     if (isFailure(e)) add(e, `${clip(inputSummary(e), 60)} → ${errorText(e)}`);
     // an unanswered call counts only once the session has clearly moved on
     else if (isPre(e) && e.tool_use_id && !settled.has(e.tool_use_id) && lastAt - at(e) > 60_000)
